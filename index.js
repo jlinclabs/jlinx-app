@@ -1,25 +1,17 @@
 import Debug from 'debug'
 import Path from 'path'
 import fs from 'fs/promises'
-
 import fetch from 'node-fetch'
 import KeyStore from 'jlinx-core/KeyStore.js'
 import DidStore from 'jlinx-core/DidStore.js'
 import { fsExists } from 'jlinx-core/util.js'
-
 import JlinxRemoteAgent from 'jlinx-client/JlinxRemoteAgent.js'
+import createDidDocument from 'jlinx-client/createDidDocument.js'
 import JlinxAgent from 'jlinx-server/JlinxAgent.js'
 import Config from './Config.js'
-import createDidDocument from 'jlinx-client/createDidDocument.js'
+import getPublicJlinxServers from './getPublicJlinxServers.js'
 
 const debug = Debug('jlinx:app')
-
-const DEFAULT_SERVERS = [
-  {
-    host: 'https://dids.jlinx.io',
-    // publicKey: '9rFz9zIvdUtM9bMQuqnnL0gKNNOSozfVtsvjT6mx88Q', // TODO replace with real public key
-  },
-]
 
 export default class JlinxApp {
 
@@ -34,7 +26,7 @@ export default class JlinxApp {
       debug('AGENT KEY', keyPair)
       return {
         agentPublicKey: keyPair.publicKeyAsString,
-        servers: [...DEFAULT_SERVERS],
+        servers: [...getPublicJlinxServers()],
       }
     })
     this.keys = new KeyStore(Path.join(this.storagePath, 'keys'))
