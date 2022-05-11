@@ -5,7 +5,7 @@ import fetch from 'node-fetch'
 import KeyStore from 'jlinx-core/KeyStore.js'
 import DidStore from 'jlinx-core/DidStore.js'
 import { fsExists } from 'jlinx-core/util.js'
-import JlinxRemoteAgent from 'jlinx-client/JlinxRemoteAgent.js'
+import JlinxHttpClient from 'jlinx-http-client'
 import createDidDocument from 'jlinx-client/createDidDocument.js'
 import JlinxServer from 'jlinx-server'
 import Config from './Config.js'
@@ -47,7 +47,7 @@ export default class JlinxApp {
       debug(`config: ${this.storagePath}`)
       const config = await this.config.read()
       this.server = this.remote // TODO maybe change agent depending on config
-        ? new JlinxRemoteAgent(this.remote)
+        ? new JlinxHttpClient(this.remote)
         : new JlinxServer({
           publicKey: config.agentPublicKey,
           storagePath: this.storagePath,
