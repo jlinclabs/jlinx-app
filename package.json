@@ -1,0 +1,31 @@
+{
+  "name": "jlinx-app",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Bass class for making apps on JLINX",
+  "main": "index.js",
+  "scripts": {
+    "test": "./scripts/test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jlinclabs/jlinx.git"
+  },
+  "keywords": [
+    "hypercore",
+    "did"
+  ],
+  "author": "Jared Grippe",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jlinclabs/jlinx/issues"
+  },
+  "homepage": "https://github.com/jlinclabs/jlinx#readme",
+  "dependencies": {
+    "debug": "^4.3.4",
+    "jlinx-client": "github:jlinclabs/jlinx-client",
+    "jlinx-core": "github:jlinclabs/jlinx-core",
+    "jlinx-did": "github:jlinclabs/jlinx-did",
+    "jlinx-server": "github:jlinclabs/jlinx-server"
+  }
+}
