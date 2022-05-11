@@ -25,6 +25,7 @@
     "debug": "^4.3.4",
     "jlinx-client": "github:jlinclabs/jlinx-client",
     "jlinx-core": "github:jlinclabs/jlinx-core",
-    "jlinx-server": "github:jlinclabs/jlinx-server"
+    "jlinx-server": "github:jlinclabs/jlinx-server",
+    "node-fetch": "^3.2.4"
   }
 }
