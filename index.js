@@ -7,7 +7,7 @@ import DidStore from 'jlinx-core/DidStore.js'
 import { fsExists } from 'jlinx-core/util.js'
 import JlinxRemoteAgent from 'jlinx-client/JlinxRemoteAgent.js'
 import createDidDocument from 'jlinx-client/createDidDocument.js'
-import JlinxAgent from 'jlinx-server/JlinxAgent.js'
+import JlinxServer from 'jlinx-server'
 import Config from './Config.js'
 import getPublicJlinxServers from './getPublicJlinxServers.js'
 
@@ -46,39 +46,39 @@ export default class JlinxApp {
     if (!this._ready) this._ready = (async () => {
       debug(`config: ${this.storagePath}`)
       const config = await this.config.read()
-      this.agent = this.remote // TODO maybe change agent depending on config
+      this.server = this.remote // TODO maybe change agent depending on config
         ? new JlinxRemoteAgent(this.remote)
-        : new JlinxAgent({
+        : new JlinxServer({
           publicKey: config.agentPublicKey,
           storagePath: this.storagePath,
           keys: this.keys,
           dids: this.dids,
         })
 
-      await this.agent.ready()
+      await this.server.ready()
     })()
     return this._ready
   }
 
   async connected(){
     await this.ready()
-    await this.agent.connected()
+    await this.server.connected()
   }
 
   async destroy(){
     debug('DESTROUOING KLIXN APP', this)
-    // if (this.agent && this.agent.destroy)
-    if (this.agent) await this.agent.destroy()
+    // if (this.server && this.server.destroy)
+    if (this.server) await this.server.destroy()
   }
 
   async resolveDid(did){
     await this.ready()
-    return this.agent.resolveDid(did)
+    return this.server.resolveDid(did)
   }
 
   async createDid(){
     await this.ready()
-    const { did, secret } = await this.agent.createDid()
+    const { did, secret } = await this.server.createDid()
     await this.dids.track(did)
     debug({ did, secret })
     debug(`creating did=${did}`)
@@ -90,9 +90,9 @@ export default class JlinxApp {
       encryptingPublicKey: encryptingKeyPair.publicKey,
     })
     debug(`updating did=${did}`, value)
-    await this.agent.amendDid({did, secret, value})
-    // return await this.agent.resolveDid(did)
-    await this.agent.resolveDid(did)
+    await this.server.amendDid({did, secret, value})
+    // return await this.server.resolveDid(did)
+    await this.server.resolveDid(did)
     return value
   }
 
@@ -105,9 +105,9 @@ export default class JlinxApp {
   async replicateDid(did){
     // TODO make this less of a mess
     await this.ready()
-    await this.agent.ready()
-    await this.agent.hypercore.ready() // await for hypercore peers
-    await this.agent.hypercore.hasPeers() // await for hypercore peers
+    await this.server.ready()
+    await this.server.hypercore.ready() // await for hypercore peers
+    await this.server.hypercore.hasPeers() // await for hypercore peers
 
     const servers = await this.getDidReplicationUrls(did)
     if (servers.length === 0)
