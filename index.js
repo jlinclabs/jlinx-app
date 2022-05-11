@@ -10,7 +10,7 @@ import { fsExists } from 'jlinx-core/util.js'
 import JlinxRemoteAgent from 'jlinx-client/JlinxRemoteAgent.js'
 import JlinxAgent from 'jlinx-server/JlinxAgent.js'
 import Config from './Config.js'
-import generateDidDocument from './generateDidDocument.js'
+import createDidDocument from 'jlinx-client/createDidDocument.js'
 
 const debug = Debug('jlinx:app')
 
@@ -92,8 +92,10 @@ export default class JlinxApp {
     debug(`creating did=${did}`)
     const signingKeyPair = await this.keys.createSigningKeyPair()
     const encryptingKeyPair = await this.keys.createEncryptingKeyPair()
-    const value = generateDidDocument({
-      did, signingKeyPair, encryptingKeyPair,
+    const value = createDidDocument({
+      did,
+      signingPublicKey: signingKeyPair.publicKey,
+      encryptingPublicKey: encryptingKeyPair.publicKey,
     })
     debug(`updating did=${did}`, value)
     await this.agent.amendDid({did, secret, value})
