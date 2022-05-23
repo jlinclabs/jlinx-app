@@ -78,22 +78,15 @@ export default class JlinxApp {
 
   async createDid(){
     await this.ready()
-    const { did, secret } = await this.server.createDid()
-    await this.dids.track(did)
-    debug({ did, secret })
-    debug(`creating did=${did}`)
+    const didDocument = await this.server.createDid()
     const signingKeyPair = await this.keys.createSigningKeyPair()
     const encryptingKeyPair = await this.keys.createEncryptingKeyPair()
-    const value = createDidDocument({
-      did,
-      signingPublicKey: signingKeyPair.publicKey,
-      encryptingPublicKey: encryptingKeyPair.publicKey,
-    })
-    debug(`updating did=${did}`, value)
-    await this.server.amendDid({did, secret, value})
-    // return await this.server.resolveDid(did)
-    await this.server.resolveDid(did)
-    return value
+    await didDocument.addKeys(
+      { type: 'signing', publicKey: signingKeyPair.publicKey },
+      { type: 'encrypting', publicKey: encryptingKeyPair.publicKey },
+    )
+    await didDocument.update()
+    return didDocument.value
   }
 
   async getDidReplicationUrls(did){
