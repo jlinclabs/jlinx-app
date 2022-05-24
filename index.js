@@ -79,6 +79,7 @@ export default class JlinxApp {
   async createDid(){
     await this.ready()
     const didDocument = await this.server.createDid()
+    this.dids.track(didDocument.did)
     const signingKeyPair = await this.keys.createSigningKeyPair()
     const encryptingKeyPair = await this.keys.createEncryptingKeyPair()
     await didDocument.addKeys(
