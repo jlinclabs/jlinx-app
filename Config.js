@@ -1,6 +1,6 @@
 import Debug from 'debug'
 import fs from 'fs/promises'
-import { fsExists, } from 'jlinx-core/util.js'
+import { fsExists, } from 'jlinx-util/util.js'
 
 const debug = Debug('jlinx:app:config')
 

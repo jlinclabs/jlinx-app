@@ -23,7 +23,7 @@
   "homepage": "https://github.com/jlinclabs/jlinx#readme",
   "dependencies": {
     "debug": "^4.3.4",
-    "jlinx-core": "github:jlinclabs/jlinx-core",
+    "jlinx-util": "github:jlinclabs/jlinx-util",
     "jlinx-http-client": "github:jlinclabs/jlinx-http-client",
     "jlinx-server": "github:jlinclabs/jlinx-server",
     "node-fetch": "^3.2.4"
