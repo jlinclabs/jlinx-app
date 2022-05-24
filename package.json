@@ -1,5 +1,5 @@
 {
-  "name": "jlinx-app",
+  "name": "jlinx-client",
   "type": "module",
   "version": "1.0.0",
   "description": "Bass class for making apps on JLINX",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jlinclabs/jlinx.git"
+    "url": "https://github.com/jlinclabs/jlinx-client.git"
   },
   "keywords": [
     "hypercore",
@@ -18,14 +18,14 @@
   "author": "Jared Grippe",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jlinclabs/jlinx/issues"
+    "url": "https://github.com/jlinclabs/jlinx-client/issues"
   },
-  "homepage": "https://github.com/jlinclabs/jlinx#readme",
+  "homepage": "https://github.com/jlinclabs/jlinx-client#readme",
   "dependencies": {
     "debug": "^4.3.4",
     "jlinx-util": "github:jlinclabs/jlinx-util",
-    "jlinx-http-client": "github:jlinclabs/jlinx-http-client",
-    "jlinx-server": "github:jlinclabs/jlinx-server",
+    "jlinx-http-node": "github:jlinclabs/jlinx-http-node",
+    "jlinx-node": "github:jlinclabs/jlinx-node",
     "node-fetch": "^3.2.4"
   }
 }

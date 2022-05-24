@@ -1,4 +1,5 @@
-# jlinx-app
+# jlinx-client
 
 - has a keyPair identity
-- talks to jlinx-server(s) to interact
+- stores keypairs locally
+- takes a jlinx-node or jlinx-http-node to talk to
