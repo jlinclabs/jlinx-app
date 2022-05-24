@@ -6,8 +6,8 @@ import KeyStore from 'jlinx-util/KeyStore.js'
 import DidStore from 'jlinx-util/DidStore.js'
 import createDidDocument from 'jlinx-util/createDidDocument.js'
 import { fsExists } from 'jlinx-util'
-import JlinxHttpClient from 'jlinx-http-client'
-import JlinxServer from 'jlinx-server'
+import JlinxHttpNode from 'jlinx-http-node'
+import JlinxNode from 'jlinx-node'
 import Config from './Config.js'
 import getPublicJlinxServers from './getPublicJlinxServers.js'
 
@@ -47,8 +47,8 @@ export default class JlinxApp {
       debug(`config: ${this.storagePath}`)
       const config = await this.config.read()
       this.server = this.remote // TODO maybe change agent depending on config
-        ? new JlinxHttpClient(this.remote)
-        : new JlinxServer({
+        ? new JlinxHttpNode(this.remote)
+        : new JlinxNode({
           publicKey: config.agentPublicKey,
           storagePath: this.storagePath,
           keys: this.keys,
