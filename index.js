@@ -29,6 +29,7 @@ export default class JlinxApp {
         servers: [...getPublicJlinxServers()],
       }
     })
+    this.config.read().then(debug)
     this.keys = new KeyStore(Path.join(this.storagePath, 'keys'))
     this.dids = new DidStore(Path.join(this.storagePath, 'dids'))
   }
