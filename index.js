@@ -66,7 +66,9 @@ module.exports = class JlinxClient {
     })
     this.keys.set(ownerKeyPair.publicKey, ownerKeyPair.secretKey)
 
-    return new Document(this, id, ownerKeyPair)
+    const doc = new Document(this, id, ownerKeyPair)
+    doc.length = 0
+    return doc
   }
 
   async get (id) {
@@ -79,7 +81,10 @@ module.exports = class JlinxClient {
       }
       ownerKeyPair.secretKey = await this.keys.get(ownerKeyPair.publicKey)
     }
-    return new Document(this, id, ownerKeyPair)
+    const info = await this.host.getInfo(id)
+    const doc = new Document(this, id, ownerKeyPair)
+    doc.length = info && info.length || 0
+    return doc
   }
 }
 
@@ -92,18 +97,18 @@ class Document {
     this.id = id
     this.ownerKeyPair = ownerKeyPair
     this.writable = !!ownerKeyPair
-    this._opening = this._open()
+    // this._opening = this._open()
   }
 
   // get key () { return this.core.key }
   // get publicKey () { return keyToBuffer(this.core.key) }
   // get writable () { return this.core.writable }
   // get length () { return this.length }
-  async _open () {
-    const info = await this.client.host.getInfo(this.id)
-    debug('Client.Document#_loadInfo', this, info)
-    this.length = info.length
-  }
+  // async _open () {
+  //   const info = await this.client.host.getInfo(this.id)
+  //   debug('Client.Document#_loadInfo', this, info)
+  //   this.length = info.length
+  // }
 
   ready () { return this._opening }
 

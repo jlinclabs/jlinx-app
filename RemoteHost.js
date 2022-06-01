@@ -19,7 +19,13 @@ module.exports = class RemoteHost {
       indent + ')'
   }
 
-  _url (...parts) { return Path.join(this.url, ...parts) }
+  _url (...parts) {
+    let url = `${this.url}`.replace(/\/+$/, '')
+    if (parts.length > 0){
+      url += '/' + Path.join(...parts)
+    }
+    return url
+  }
 
   async ready () {
     const json = await getJson(this.url)
@@ -59,8 +65,9 @@ module.exports = class RemoteHost {
   }
 
   async getEntry (id, index) {
-    const response = await fetch(this._url(id, index))
-    const body = response.body
+    console.log({ url: this._url(id, `${index}`) })
+    const response = await fetch(this._url(id, `${index}`))
+    const body = await response.text()
     debug({ id, body })
     return body
   }
@@ -80,7 +87,7 @@ async function fetch (url, options = {}) {
       status: response.status,
       statusText: response.statusText
     })
-    throw new Error('request failed')
+    throw new Error(`request failed url="${url}"`)
   }
   debug('fetch', { url, options, status: response.status })
   return response
