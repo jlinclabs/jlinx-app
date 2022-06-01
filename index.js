@@ -1,146 +1,148 @@
-import Debug from 'debug'
-import Path from 'path'
-import fs from 'fs/promises'
-import fetch from 'node-fetch'
-import KeyStore from 'jlinx-util/KeyStore.js'
-import DidStore from 'jlinx-util/DidStore.js'
-import createDidDocument from 'jlinx-util/createDidDocument.js'
-import { fsExists } from 'jlinx-util'
-import JlinxHttpNode from 'jlinx-http-node'
-import JlinxNode from 'jlinx-node'
-import Config from './Config.js'
-import getPublicJlinxServers from './getPublicJlinxServers.js'
+const Debug = require('debug')
 
-const debug = Debug('jlinx:app')
+const {
+  keyToBuffer,
+  keyToString,
+  sign,
+  createSigningKeyPair,
+  validateSigningKeyPair
+} = require('jlinx-util')
 
-export default class JlinxApp {
+const Vault = require('jlinx-vault')
+const RemoteHost = require('./RemoteHost')
 
-  constructor(opts = {}){
-    this.storagePath = opts.storagePath
-    if (!this.storagePath) throw new Error(`${this.constructor.name} requires 'storagePath'`)
-    this.remote = opts.remote /// <--- ???? :/
-    this.config = new Config(Path.join(this.storagePath, 'config.json'), async () => {
-      if (!(await fsExists(this.storagePath))) await fs.mkdir(this.storagePath)
-      debug('initializing jlinx storage at', this.config.path)
-      const keyPair = await this.keys.createSigningKeyPair()
-      debug('AGENT KEY', keyPair)
-      return {
-        agentPublicKey: keyPair.publicKeyAsString,
-        servers: [...getPublicJlinxServers()],
-      }
+const debug = Debug('jlinx:client')
+
+module.exports = class JlinxClient {
+  constructor (opts) {
+    debug(opts)
+
+    this.vault = new Vault({
+      path: opts.vaultPath,
+      key: opts.vaultKey
     })
-    this.config.read().then(debug)
-    this.keys = new KeyStore(Path.join(this.storagePath, 'keys'))
-    this.dids = new DidStore(Path.join(this.storagePath, 'dids'))
+    this.keys = this.vault.namespace('keys', 'raw')
+    this.docs = this.vault.namespace('docs', 'json')
+
+    this.host = new RemoteHost({
+      url: opts.hostUrl
+    })
+
+    this._ready = this._open()
   }
 
-  [Symbol.for('nodejs.util.inspect.custom')](depth, opts){
-    let indent = ''
-    if (typeof opts.indentationLvl === 'number')
-      while (indent.length < opts.indentationLvl) indent += ' '
-    return this.constructor.name + '(\n' +
-      indent + '  storagePath: ' + opts.stylize(this.storagePath, 'string') + '\n' +
-      indent + ')'
+  ready () { return this._ready }
+
+  async _open () {
+    await this.vault.ready()
+    await this.host.ready()
   }
 
-  ready(){
-    if (!this._ready) this._ready = (async () => {
-      debug(`config: ${this.storagePath}`)
-      const config = await this.config.read()
-      this.server = this.remote // TODO maybe change agent depending on config
-        ? new JlinxHttpNode(this.remote)
-        : new JlinxNode({
-          publicKey: config.agentPublicKey,
-          storagePath: this.storagePath,
-          keys: this.keys,
-          dids: this.dids,
-        })
-
-      await this.server.ready()
-    })()
-    return this._ready
+  async destroy () {
+    // await this.vault.close()
+    // await this.host.destroy()
   }
 
-  async connected(){
-    await this.ready()
-    await this.server.connected()
-  }
+  async create () {
+    // create new owner signing keys
+    const ownerKeyPair = createSigningKeyPair()
 
-  async destroy(){
-    debug('DESTROUOING KLIXN APP', this)
-    // if (this.server && this.server.destroy)
-    if (this.server) await this.server.destroy()
-  }
-
-  async resolveDid(did){
-    await this.ready()
-    return this.server.resolveDid(did)
-  }
-
-  async createDid(){
-    await this.ready()
-    const didDocument = await this.server.createDid()
-    this.dids.track(didDocument.did)
-    const signingKeyPair = await this.keys.createSigningKeyPair()
-    const encryptingKeyPair = await this.keys.createEncryptingKeyPair()
-    await didDocument.addKeys(
-      { type: 'signing', publicKey: signingKeyPair.publicKey },
-      { type: 'encrypting', publicKey: encryptingKeyPair.publicKey },
+    debug({ ownerKeyPair })
+    const ownerSigningKeyProof = sign(
+      keyToBuffer(this.host.publicKey),
+      ownerKeyPair.secretKey
     )
-    await didDocument.update()
-    return didDocument.value
+    debug('creating', {
+      ownerSigningKey: keyToString(ownerKeyPair.publicKey)
+    })
+    const { id } = await this.host.create({
+      ownerSigningKey: ownerKeyPair.publicKey,
+      ownerSigningKeyProof
+    })
+    debug('created', { id })
+    this.docs.set(id, {
+      ownerSigningKey: keyToString(ownerKeyPair.publicKey),
+      host: this.host.url
+    })
+    this.keys.set(ownerKeyPair.publicKey, ownerKeyPair.secretKey)
+
+    return new Document(this, id, ownerKeyPair)
   }
 
-  async getDidReplicationUrls(did){
-    await this.ready()
-    const servers = await this.config.getServers()
-    return servers.map(server => `${server.host}/${did}`)
-  }
-
-  async replicateDid(did){
-    // TODO make this less of a mess
-    await this.ready()
-    await this.server.ready()
-    await this.server.hypercore.ready() // await for hypercore peers
-    await this.server.hypercore.hasPeers() // await for hypercore peers
-
-    const servers = await this.getDidReplicationUrls(did)
-    if (servers.length === 0)
-      throw new Error(`unable to replicate. no servers listed in config ${this.config.path}`)
-    const results = await Promise.all(
-      servers.map(url => replicateDid(did, url))
-    )
-    // const successes = results.map(r => r && r.id === did)
-    debug('replicateion results', results)
-    // results.sortBy('created')[0]
-    if (results.every(success => !success))
-      throw new Error(`replication failed`)
+  async get (id) {
+    const record = await this.docs.get(id)
+    debug('get', { id, record })
+    let ownerKeyPair
+    if (record) {
+      ownerKeyPair = {
+        publicKey: keyToBuffer(record.ownerSigningKey)
+      }
+      ownerKeyPair.secretKey = await this.keys.get(ownerKeyPair.publicKey)
+    }
+    return new Document(this, id, ownerKeyPair)
   }
 }
 
-
-async function replicateDid(did, url){
-  debug(`replicating did=${did} at ${url}`)
-  async function attempt(){
-    // const url = `${server.host}/${did}`
-    debug(`attempting to replicating did=${did} at ${url}`)
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json'
-      }
-    })
-    debug('RESPONSE?', response)
-    debug('response.ok?', response.ok)
-    const didDocument = response.ok ? await response.json() : null
-    debug('response.json()', didDocument)
-    if (didDocument && didDocument.id === did) return didDocument
-    debug('replication failed')
+class Document {
+  constructor (client, id, ownerKeyPair) {
+    if (!validateSigningKeyPair(ownerKeyPair)) {
+      throw new Error('invalid ownerKeyPair')
+    }
+    this.client = client
+    this.id = id
+    this.ownerKeyPair = ownerKeyPair
+    this.writable = !!ownerKeyPair
+    this._opening = this._open()
   }
-  const start = Date.now()
-  while (Date.now() - start < 20000){
-    const didDocument = await attempt()
-    debug('wtf🐼', didDocument)
-    if (didDocument) return didDocument
+
+  // get key () { return this.core.key }
+  // get publicKey () { return keyToBuffer(this.core.key) }
+  // get writable () { return this.core.writable }
+  // get length () { return this.length }
+  async _open () {
+    const info = await this.client.host.getInfo(this.id)
+    debug('Client.Document#_loadInfo', this, info)
+    this.length = info.length
+  }
+
+  ready () { return this._opening }
+
+  async get (index) {
+    // TODO local entry caching
+    const entry = this.client.host.getEntry(this.id, index)
+    return entry
+  }
+
+  async append (blocks) {
+    if (!this.writable) {
+      throw new Error('jlinx document is not writable')
+    }
+    // sign each block
+    for (const block of blocks) {
+      await this.client.host.append(
+        this.id,
+        block,
+        sign(
+          block,
+          this.ownerKeyPair.secretKey
+        )
+      )
+    }
+  }
+
+  sub (/* handler */) {
+    throw new Error('now supported yet')
+    // this._subs.add(handler)
+    // return () => { this._subs.delete(handler) }
+  }
+
+  [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
+    let indent = ''
+    if (typeof opts.indentationLvl === 'number') { while (indent.length < opts.indentationLvl) indent += ' ' }
+    return this.constructor.name + '(\n' +
+      indent + '  id: ' + opts.stylize(this.id, 'string') + '\n' +
+      indent + '  writable: ' + opts.stylize(this.writable, 'boolean') + '\n' +
+      indent + '  length: ' + opts.stylize(this.length, 'number') + '\n' +
+      indent + ')'
   }
 }

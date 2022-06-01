@@ -1,19 +1,18 @@
 {
   "name": "jlinx-client",
-  "type": "module",
   "version": "1.0.0",
   "description": "Bass class for making apps on JLINX",
   "main": "index.js",
   "scripts": {
-    "test": "./scripts/test"
+    "lint": "standard",
+    "test": "standard && tape test/*.js"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/jlinclabs/jlinx-client.git"
   },
   "keywords": [
-    "hypercore",
-    "did"
+    "jlinx"
   ],
   "author": "Jared Grippe",
   "license": "MIT",
@@ -24,8 +23,12 @@
   "dependencies": {
     "debug": "^4.3.4",
     "jlinx-util": "github:jlinclabs/jlinx-util",
-    "jlinx-http-node": "github:jlinclabs/jlinx-http-node",
-    "jlinx-node": "github:jlinclabs/jlinx-node",
+    "jlinx-vault": "github:jlinclabs/jlinx-vault",
     "node-fetch": "^3.2.4"
+  },
+  "devDependencies": {
+    "standard": "^17.0.0",
+    "tape": "^5.5.3",
+    "tmp-promise": "^3.0.3"
   }
 }
