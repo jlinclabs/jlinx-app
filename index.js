@@ -17,12 +17,7 @@ module.exports = class JlinxClient {
   constructor (opts) {
     debug(opts)
 
-    // this.vault = new Vault({
-    //   path: opts.vaultPath,
-    //   key: opts.vaultKey
-    // })
-    // this.keys = this.vault.namespace('keys', 'raw')
-    // this.docs = this.vault.namespace('docs', 'json')
+    this.keys = opts.keys
 
     this.host = new RemoteHost({
       url: opts.hostUrl
@@ -34,7 +29,7 @@ module.exports = class JlinxClient {
   ready () { return this._ready }
 
   async _open () {
-    await this.vault.ready()
+    // await this.vault.ready()
     await this.host.ready()
   }
 
@@ -44,12 +39,13 @@ module.exports = class JlinxClient {
   }
 
   async create () {
+    await this.ready()
     // create new owner signing keys
     const ownerSigningKey = await this.keys.create()
     // const ownerKeyPair = createSigningKeyPair()
     // debug({ ownerKeyPair })
 
-    const ownerSigningKeyProof = this.keys.sign(
+    const ownerSigningKeyProof = await this.keys.sign(
       keyToBuffer(this.host.publicKey),
       ownerSigningKey
     )
@@ -60,34 +56,29 @@ module.exports = class JlinxClient {
     // debug('creating', {
     //   ownerSigningKey: keyToString(ownerKeyPair.publicKey)
     // })
-    const { id } = await this.host.create({
-      ownerSigningKey: ownerKeyPair.publicKey,
+    debug({
+      ownerSigningKey,
+      ownerSigningKeyProof
+    })
+    const id = await this.host.create({
+      ownerSigningKey,
       ownerSigningKeyProof
     })
     debug('created', { id })
-    await this.docs.set(id, {
-      ownerSigningKey: keyToString(ownerKeyPair.publicKey),
-    })
-    await this.keys.set(ownerKeyPair.publicKey, ownerKeyPair.secretKey)
+    return id
+    // await this.docs.set(id, {
+    //   ownerSigningKey: keyToString(ownerSigningKey),
+    // })
+    // await this.keys.set(ownerKeyPair.publicKey, ownerKeyPair.secretKey)
 
-    const doc = new Document(this, id, ownerKeyPair)
-    doc.length = 0
-    return doc
+    // const doc = new Document(this, id, ownerKeyPair)
+    // doc.length = 0
+    // return doc
   }
 
-  async get (id) {
-    const record = await this.docs.get(id)
-    debug('get', { id, record })
-    let ownerKeyPair
-    if (record) {
-      ownerKeyPair = {
-        publicKey: keyToBuffer(record.ownerSigningKey)
-      }
-      ownerKeyPair.secretKey = await this.keys.get(ownerKeyPair.publicKey)
-    }
-    const info = await this.host.getInfo(id)
+  async get (id, ownerKeyPair) {
+    debug('get', { id, ownerKeyPair })
     const doc = new Document(this, id, ownerKeyPair)
-    doc.length = info && info.length || 0
     return doc
   }
 }
