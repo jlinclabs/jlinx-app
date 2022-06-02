@@ -17,12 +17,12 @@ module.exports = class JlinxClient {
   constructor (opts) {
     debug(opts)
 
-    this.vault = new Vault({
-      path: opts.vaultPath,
-      key: opts.vaultKey
-    })
-    this.keys = this.vault.namespace('keys', 'raw')
-    this.docs = this.vault.namespace('docs', 'json')
+    // this.vault = new Vault({
+    //   path: opts.vaultPath,
+    //   key: opts.vaultKey
+    // })
+    // this.keys = this.vault.namespace('keys', 'raw')
+    // this.docs = this.vault.namespace('docs', 'json')
 
     this.host = new RemoteHost({
       url: opts.hostUrl
@@ -45,26 +45,30 @@ module.exports = class JlinxClient {
 
   async create () {
     // create new owner signing keys
-    const ownerKeyPair = createSigningKeyPair()
+    const ownerSigningKey = await this.keys.create()
+    // const ownerKeyPair = createSigningKeyPair()
+    // debug({ ownerKeyPair })
 
-    debug({ ownerKeyPair })
-    const ownerSigningKeyProof = sign(
+    const ownerSigningKeyProof = this.keys.sign(
       keyToBuffer(this.host.publicKey),
-      ownerKeyPair.secretKey
+      ownerSigningKey
     )
-    debug('creating', {
-      ownerSigningKey: keyToString(ownerKeyPair.publicKey)
-    })
+    // const ownerSigningKeyProof = sign(
+    //   keyToBuffer(this.host.publicKey),
+    //   ownerKeyPair.secretKey
+    // )
+    // debug('creating', {
+    //   ownerSigningKey: keyToString(ownerKeyPair.publicKey)
+    // })
     const { id } = await this.host.create({
       ownerSigningKey: ownerKeyPair.publicKey,
       ownerSigningKeyProof
     })
     debug('created', { id })
-    this.docs.set(id, {
+    await this.docs.set(id, {
       ownerSigningKey: keyToString(ownerKeyPair.publicKey),
-      host: this.host.url
     })
-    this.keys.set(ownerKeyPair.publicKey, ownerKeyPair.secretKey)
+    await this.keys.set(ownerKeyPair.publicKey, ownerKeyPair.secretKey)
 
     const doc = new Document(this, id, ownerKeyPair)
     doc.length = 0

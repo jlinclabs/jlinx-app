@@ -28,7 +28,13 @@ module.exports = class RemoteHost {
   }
 
   async ready () {
-    const json = await getJson(this.url)
+    const response = await fetch(this.url, {
+      method: 'get',
+      headers: {
+        Accept: 'application/json'
+      },
+    })
+    const json = await response.json()
     debug(json)
     const { publicKey } = json
     if (!publicKey) {
@@ -38,42 +44,68 @@ module.exports = class RemoteHost {
     debug('ready')
   }
 
-  async create (opts) {
-    const {
-      ownerSigningKey,
-      ownerSigningKeyProof
-    } = opts
-    const postBody = {
-      ownerSigningKey: ownerSigningKey.toString('hex'),
-      ownerSigningKeyProof: ownerSigningKeyProof.toString('hex')
-    }
-    debug({ postBody })
-    const { id } = await postJson(this._url('create'), postBody)
+  async create ({
+    ownerSigningKey,
+    ownerSigningKeyProof
+  }) {
+    const url = this._url('create')
+    const response = await fetch(url, {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify({
+        ownerSigningKey: ownerSigningKey.toString('hex'),
+        ownerSigningKeyProof: ownerSigningKeyProof.toString('hex')
+      })
+    })
+    const { id } = await response.json()
     debug('created', { id })
-    return { id }
-    // return new Document(this, id, 0)
-    // return await this.get(id)
-    // return new Document(this, id)
+    return id
   }
 
-  async getInfo (id) {
+  async getLength (id) {
     // TODO validate id
     // /^\/([A-Za-z0-9\-_]{43})$/
-    const info = await getJson(this._url(id))
-    debug({ id, info })
-    return info
+    const url = this._url(id)
+    const response = await fetch(url, {
+      method: 'get',
+      headers: {
+        Accept: 'application/json'
+      },
+    })
+    const { length } = await response.json()
+    debug({ length })
+    return length
   }
 
   async getEntry (id, index) {
-    console.log({ url: this._url(id, `${index}`) })
-    const response = await fetch(this._url(id, `${index}`))
-    const body = await response.text()
-    debug({ id, body })
-    return body
+    const url = this._url(id, `${index}`)
+    const response = await fetch(url, {
+      method: 'get',
+      headers: {
+        Accept: 'application/octet-stream'
+      },
+    })
+    const block = await response.arrayBuffer()
+    debug({ id, block })
+    return block
   }
 
   async append (id, block, signature) {
-
+    const url = this._url(id)
+    const response = await fetch(url, {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': block.length,
+        'jlinx-signature': signature.toString('hex'),
+        Accept: 'application/json'
+      },
+    })
+    const { length } = response.json()
+    return length
   }
 }
 
@@ -91,36 +123,4 @@ async function fetch (url, options = {}) {
   }
   debug('fetch', { url, options, status: response.status })
   return response
-}
-
-async function getJson (url, options = {}) {
-  const response = await fetch(
-    url,
-    {
-      ...options,
-      headers: {
-        ...options.headers,
-        Accept: 'application/json'
-      }
-    }
-  )
-  if (response.status < 300) {
-    return await response.json()
-  }
-}
-
-async function postJson (url, body, options = {}) {
-  const response = await fetch(
-    url,
-    {
-      ...options,
-      method: 'post',
-      body: JSON.stringify(body),
-      headers: {
-        ...options.headers,
-        'Content-Type': 'application/json'
-      }
-    }
-  )
-  return await response.json()
 }
