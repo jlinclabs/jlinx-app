@@ -44,10 +44,13 @@ module.exports = class RemoteHost {
     debug('ready')
   }
 
-  async create ({
-    ownerSigningKey,
-    ownerSigningKeyProof
-  }) {
+  async create (opts) {
+
+    const {
+      ownerSigningKey,
+      ownerSigningKeyProof
+    } = opts
+
     const url = this._url('create')
     const response = await fetch(url, {
       method: 'post',

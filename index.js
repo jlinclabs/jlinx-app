@@ -10,6 +10,7 @@ const {
 
 const Vault = require('jlinx-vault')
 const RemoteHost = require('./RemoteHost')
+const Document = require('./Document')
 
 const debug = Debug('jlinx:client')
 
@@ -17,13 +18,13 @@ module.exports = class JlinxClient {
   constructor (opts) {
     debug(opts)
 
-    this.vault = opts.vault
-    if (!this.vault){
-      throw new Error()
-    }
+    this.vault = new Vault({
+      path: opts.vaultPath,
+      key: opts.vaultKey,
+    })
 
     this.host = new RemoteHost({
-      url: opts.hostUrl
+      url: opts.hostUrl,
     })
 
     this._ready = this._open()
@@ -43,138 +44,53 @@ module.exports = class JlinxClient {
 
   async create (opts = {}) {
     await this.ready()
-    const ownerSigningKeys = opts.ownerSigningKey
-      ? await this.vault.keys.get(opts.ownerSigningKey)
-      : await this.vault.keys.createSigningKeyPair()
+    const ownerSigningKeys = await this.vault.keys.createSigningKeyPair()
     const ownerSigningKey = ownerSigningKeys.publicKey
     const ownerSigningKeyProof = await ownerSigningKeys.sign(
-      keyToBuffer(this.host.publicKey),
-      ownerSigningKey
+      keyToBuffer(this.host.publicKey)
     )
+
     const id = await this.host.create({
       ownerSigningKey,
-      ownerSigningKeyProof
+      ownerSigningKeyProof,
     })
-    await this.vault.ownerSigningKeys.set(id, ownerSigningKey)
+
+    await this.vault.docs.put(id, {
+      ownerSigningKey,
+      writable: true,
+    })
 
     debug('created', { id })
-    // return id
-    const doc = new Document(this.host, id, ownerSigningKeys)
-    doc.length = 0
-    return doc
+
+
+    return this.get(id)
   }
 
   async get (id) {
     debug('get', { id })
-    const ownerSigningKey = await this.vault.ownerSigningKeys.get(id)
-    const ownerSigningKeys = ownerSigningKey
-      ? await this.vault.keys.get(ownerSigningKey)
-      : undefined
-    const doc = new Document(this.host, id, ownerSigningKeys)
+    const docRecord = await this.vault.docs.get(id)
+    debug('get', { id, docRecord })
+    const ownerSigningKeys = (docRecord && docRecord.ownerSigningKey)
+    ? await this.vault.keys.get(docRecord.ownerSigningKey)
+    : undefined
+    debug('get', { id, ownerSigningKeys })
+    const doc = new Document({
+      // ...docRecord,
+      host: this.host,
+      id,
+      ownerSigningKeys,
+    })
     debug('get', doc)
     return doc
   }
 
   async all(){
-    this.vault.myDocIds
-  }
-}
-
-class Document {
-  constructor (host, id, ownerSigningKeys) {
-    this.host = host
-    this.id = id
-    this.ownerSigningKeys = ownerSigningKeys
-    this.writable = !!ownerSigningKeys
-    this._entries = []
-    this._opening = this._open()
-  }
-
-  [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
-    let indent = ''
-    if (typeof opts.indentationLvl === 'number') { while (indent.length < opts.indentationLvl) indent += ' ' }
-    return this.constructor.name + '(\n' +
-      indent + '  id: ' + opts.stylize(this.id, 'string') + '\n' +
-      indent + '  writable: ' + opts.stylize(this.writable, 'boolean') + '\n' +
-      indent + '  length: ' + opts.stylize(this.length, 'number') + '\n' +
-      indent + ')'
-  }
-
-  ready () { return this._opening }
-
-  async _open () {
-    if (typeof this.length !== 'number') await this.update()
-    if (this.length > 0){
-      const header = await this.host.getEntry(this.id, 0)
-      debug('Client.Document#_open', this, { header })
-
-      // TODO read the header
-      // get the encoding
-      // decode/parse entries
-    }
-  }
-
-  async update () {
-    this.length = await this.host.getLength(this.id)
-  }
-
-  async get (index) {
-    await this.ready()
-    if (index > this.length - 1) return
-    let entry = this._entries[index]
-    if (!entry) {
-      entry = await this.host.getEntry(this.id, index)
-      this._entries[index] = entry
-    }
-    return entry
-  }
-
-  async append (blocks) {
-    if (!this.writable) {
-      throw new Error('jlinx document is not writable')
-    }
-    // sign each block
-    for (const block of blocks) {
-      const signature = await this.ownerSigningKeys.sign(block)
-      // const signatureValid = await this.ownerSigningKeys.verify(block, signature)
-      // debug({ block, signature, signatureValid })
-      // if (!signatureValid){
-      //   throw new Error(`unable to sign block`)
-      // }
-      const newLength = await this.host.append(
-        this.id,
-        block,
-        signature
-      )
-      this.length = newLength
-    }
-  }
-
-  sub (/* handler */) {
-    throw new Error('now supported yet')
-    // this._subs.add(handler)
-    // return () => { this._subs.delete(handler) }
-  }
-
-  async all () {
-    await this.ready()
-    if (this.length === 0) return []
-    return await Promise.all(
-      Array(this.length).fill()
-        .map(async (_, i) => this.get(i))
+    // this.vault.myDocIds
+    const ids = await this.vault.docs.ids()
+    console.log({ ids })
+    const docs = await Promise.all(
+      ids.map(id => this.get(id))
     )
+    return docs
   }
-
-  async value () {
-    return this.all()
-  }
-
-  toJSON () {
-    return {
-      id: this.id,
-      length: this.length,
-      writable: this.writable,
-    }
-  }
-
 }
