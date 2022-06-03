@@ -2,10 +2,6 @@ const Debug = require('debug')
 
 const {
   keyToBuffer,
-  keyToString,
-  sign,
-  createSigningKeyPair,
-  validateSigningKeyPair
 } = require('jlinx-util')
 
 const Vault = require('jlinx-vault')
@@ -49,21 +45,23 @@ module.exports = class JlinxClient {
     const ownerSigningKeyProof = await ownerSigningKeys.sign(
       keyToBuffer(this.host.publicKey)
     )
-
     const id = await this.host.create({
       ownerSigningKey,
       ownerSigningKeyProof,
     })
-
     await this.vault.docs.put(id, {
       ownerSigningKey,
       writable: true,
+      length: 0,
     })
-
     debug('created', { id })
-
-
-    return this.get(id)
+    return new Document({
+      // ...docRecord,
+      host: this.host,
+      id,
+      ownerSigningKeys,
+      length: 0,
+    })
   }
 
   async get (id) {

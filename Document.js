@@ -8,7 +8,9 @@ module.exports = class Document {
     this.id = opts.id
     this.ownerSigningKeys = opts.ownerSigningKeys
     this.writable = !!opts.ownerSigningKeys
-    this._entries = []
+    // set on create of loaded from cache
+    this.length = opts.length
+    this._entries = opts._entries || []
     this._opening = this._open()
   }
 
@@ -27,7 +29,7 @@ module.exports = class Document {
   async _open () {
     if (typeof this.length !== 'number') await this.update()
     if (this.length > 0){
-      const header = await this.host.getEntry(this.id, 0)
+      const header = await this.get(0)
       debug('Client.Document#_open', this, { header })
 
       // TODO read the header
@@ -41,7 +43,8 @@ module.exports = class Document {
   }
 
   async get (index) {
-    await this.ready()
+    // await this.host.ready() // ???
+    // await this.ready() // READY uses get lol
     if (index > this.length - 1) return
     let entry = this._entries[index]
     if (!entry) {
@@ -58,11 +61,6 @@ module.exports = class Document {
     // sign each block
     for (const block of blocks) {
       const signature = await this.ownerSigningKeys.sign(block)
-      // const signatureValid = await this.ownerSigningKeys.verify(block, signature)
-      // debug({ block, signature, signatureValid })
-      // if (!signatureValid){
-      //   throw new Error(`unable to sign block`)
-      // }
       const newLength = await this.host.append(
         this.id,
         block,
