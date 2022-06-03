@@ -67,7 +67,9 @@ module.exports = class JlinxClient {
   async get (id) {
     debug('get', { id })
     const ownerSigningKey = await this.vault.ownerSigningKeys.get(id)
-    const ownerSigningKeys = await this.vault.keys.get(ownerSigningKey)
+    const ownerSigningKeys = ownerSigningKey
+      ? await this.vault.keys.get(ownerSigningKey)
+      : undefined
     const doc = new Document(this.host, id, ownerSigningKeys)
     debug('get', doc)
     return doc
