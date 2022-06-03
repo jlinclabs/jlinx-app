@@ -3,6 +3,13 @@ const Debug = require('debug')
 const debug = Debug('jlinx:client:document')
 
 module.exports = class Document {
+
+  static open (opts){
+    let DocumentClass = Document
+    // if opts changes type
+    return new DocumentClass(opts)
+  }
+
   constructor (opts) {
     this.host = opts.host
     this.id = opts.id

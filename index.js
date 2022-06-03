@@ -1,7 +1,8 @@
 const Debug = require('debug')
 
 const {
-  keyToBuffer,
+  keyToString,
+  keyToBuffer
 } = require('jlinx-util')
 
 const Vault = require('jlinx-vault')
@@ -50,18 +51,18 @@ module.exports = class JlinxClient {
       ownerSigningKeyProof,
     })
     await this.vault.docs.put(id, {
-      ownerSigningKey,
+      ownerSigningKey: keyToString(ownerSigningKey),
       writable: true,
       length: 0,
     })
-    debug('created', { id })
-    return new Document({
-      // ...docRecord,
+    const doc = await Document.open({
       host: this.host,
       id,
       ownerSigningKeys,
       length: 0,
     })
+    debug('created', { doc })
+    return doc
   }
 
   async get (id) {
@@ -69,11 +70,10 @@ module.exports = class JlinxClient {
     const docRecord = await this.vault.docs.get(id)
     debug('get', { id, docRecord })
     const ownerSigningKeys = (docRecord && docRecord.ownerSigningKey)
-    ? await this.vault.keys.get(docRecord.ownerSigningKey)
+    ? await this.vault.keys.get(keyToBuffer(docRecord.ownerSigningKey))
     : undefined
     debug('get', { id, ownerSigningKeys })
-    const doc = new Document({
-      // ...docRecord,
+    const doc = await Document.open({
       host: this.host,
       id,
       ownerSigningKeys,
