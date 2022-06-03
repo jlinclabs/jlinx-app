@@ -72,6 +72,10 @@ module.exports = class JlinxClient {
     debug('get', doc)
     return doc
   }
+
+  async all(){
+    this.vault.myDocIds
+  }
 }
 
 class Document {
@@ -101,6 +105,10 @@ class Document {
     if (this.length > 0){
       const header = await this.host.getEntry(this.id, 0)
       debug('Client.Document#_open', this, { header })
+
+      // TODO read the header
+      // get the encoding
+      // decode/parse entries
     }
   }
 
