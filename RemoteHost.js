@@ -65,6 +65,10 @@ module.exports = class RemoteHost {
     return id
   }
 
+  async destroy(){
+    // TODO close persistant http connections
+  }
+
   async getLength (id) {
     // TODO validate id
     // /^\/([A-Za-z0-9\-_]{43})$/
@@ -81,6 +85,7 @@ module.exports = class RemoteHost {
   }
 
   async getEntry (id, index) {
+    debug('getEntry', { id, index })
     const url = this._url(id, `${index}`)
     const response = await fetch(url, {
       method: 'get',
@@ -89,11 +94,11 @@ module.exports = class RemoteHost {
       },
     })
     const block = await response.arrayBuffer()
-    debug({ id, block })
     return block
   }
 
   async append (id, block, signature) {
+    debug('append', { id, block, signature })
     const url = this._url(id)
     const response = await fetch(url, {
       method: 'post',
@@ -103,24 +108,26 @@ module.exports = class RemoteHost {
         'jlinx-signature': signature.toString('hex'),
         Accept: 'application/json'
       },
+      body: block,
     })
-    const { length } = response.json()
+    const { length } = await response.json()
+    debug('append success', { id, length })
     return length
   }
 }
 
 async function fetch (url, options = {}) {
   const { default: fetch } = await import('node-fetch')
-  debug('fetch', { url, options })
+  debug('fetch req', { url, options })
   const response = await fetch(url, options)
-  if (response.status >= 500) {
-    debug({
+  if (response.status >= 400) {
+    debug('fetch failed', {
       url,
       status: response.status,
       statusText: response.statusText
     })
     throw new Error(`request failed url="${url}"`)
   }
-  debug('fetch', { url, options, status: response.status })
+  debug('fetch res', { url, options, status: response.status })
   return response
 }
