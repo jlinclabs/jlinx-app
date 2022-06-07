@@ -41,6 +41,10 @@ module.exports = class JlinxClient {
 
   async create (opts = {}) {
     await this.ready()
+    console.log('this.vault', this.vault)
+    console.log('this.vault.constructor', this.vault.constructor)
+    console.log('this.vault.constructor', this.vault.constructor+'')
+    console.log('this.vault.keys', this.vault.keys)
     const ownerSigningKeys = await this.vault.keys.createSigningKeyPair()
     const ownerSigningKey = ownerSigningKeys.publicKey
     const ownerSigningKeyProof = await ownerSigningKeys.sign(
@@ -90,5 +94,19 @@ module.exports = class JlinxClient {
       ids.map(id => this.get(id))
     )
     return docs
+  }
+
+
+  // METHODS BELOW HERE SHOULD BE MOVED TO PLUGINS
+
+  async createAppUser(opts){
+    const doc = await this.create()
+    await doc.appendJson({
+      type: 'JlinxAppUser',
+      encoding: 'json',
+      followupUrl: opts.followupUrl,
+      // TODO signed by our public key
+    })
+    return doc
   }
 }

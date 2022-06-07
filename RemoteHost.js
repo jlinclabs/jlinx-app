@@ -22,7 +22,7 @@ module.exports = class RemoteHost {
   _url (...parts) {
     let url = `${this.url}`.replace(/\/+$/, '')
     if (parts.length > 0){
-      url += '/' + Path.join(...parts)
+      url += '/' + Path.join(...parts.map(x => `${x}`))
     }
     return url
   }
@@ -116,6 +116,12 @@ module.exports = class RemoteHost {
     const { length } = await response.json()
     debug('append success', { id, length })
     return length
+  }
+
+  async waitForUpdate(id, length){
+    const index = length - 1
+    const url = this._url(id, index, 'next')
+    await fetch(url)
   }
 }
 

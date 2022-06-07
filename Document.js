@@ -1,13 +1,16 @@
 const Debug = require('debug')
+const b4a = require('b4a')
 
 const debug = Debug('jlinx:client:document')
 
 module.exports = class Document {
 
-  static open (opts){
+  static async open (opts){
     let DocumentClass = Document
     // if opts changes type
-    return new DocumentClass(opts)
+    const doc = new DocumentClass(opts)
+    await doc.ready()
+    return doc
   }
 
   constructor (opts) {
@@ -35,14 +38,13 @@ module.exports = class Document {
 
   async _open () {
     if (typeof this.length !== 'number') await this.update()
-    if (this.length > 0){
-      const header = await this.get(0)
-      debug('Client.Document#_open', this, { header })
-
-      // TODO read the header
-      // get the encoding
-      // decode/parse entries
-    }
+    // if (this.length > 0){
+    //   const header = await this.get(0)
+    //   debug('Client.Document#_open', this, { header })
+    //   // TODO read the header
+    //   // get the encoding
+    //   // decode/parse entries
+    // }
   }
 
   async update () {
@@ -77,10 +79,16 @@ module.exports = class Document {
     }
   }
 
-  sub (/* handler */) {
-    throw new Error('now supported yet')
-    // this._subs.add(handler)
-    // return () => { this._subs.delete(handler) }
+  sub (/*handler*/) {
+    // throw new Error('now supported yet')
+    // // this._subs.add(handler)
+    // // return () => { this._subs.delete(handler) }
+    // this.host.waitForUpdate()
+  }
+
+  async waitForUpdate(){
+    await this.ready()
+    await this.host.waitForUpdate(this.id, this.length)
   }
 
   async all () {
@@ -104,4 +112,14 @@ module.exports = class Document {
     }
   }
 
+
+  // appendJson is TEMP until we make real document subscalles
+  async appendJson(json){
+    await this.append([b4a.from(JSON.stringify(json))])
+  }
+
+  // getJson is TEMP until we make real document subscalles
+  async getJson(index){
+    return JSON.stringify(await this.get(index))
+  }
 }
