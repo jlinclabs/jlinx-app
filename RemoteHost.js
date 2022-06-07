@@ -21,7 +21,7 @@ module.exports = class RemoteHost {
 
   _url (...parts) {
     let url = `${this.url}`.replace(/\/+$/, '')
-    if (parts.length > 0){
+    if (parts.length > 0) {
       url += '/' + Path.join(...parts.map(x => `${x}`))
     }
     return url
@@ -32,7 +32,7 @@ module.exports = class RemoteHost {
       method: 'get',
       headers: {
         Accept: 'application/json'
-      },
+      }
     })
     const json = await response.json()
     debug(json)
@@ -45,7 +45,6 @@ module.exports = class RemoteHost {
   }
 
   async create (opts) {
-
     const {
       ownerSigningKey,
       ownerSigningKeyProof
@@ -68,7 +67,7 @@ module.exports = class RemoteHost {
     return id
   }
 
-  async destroy(){
+  async destroy () {
     // TODO close persistant http connections
   }
 
@@ -80,7 +79,7 @@ module.exports = class RemoteHost {
       method: 'get',
       headers: {
         Accept: 'application/json'
-      },
+      }
     })
     const { length } = await response.json()
     debug({ length })
@@ -94,7 +93,7 @@ module.exports = class RemoteHost {
       method: 'get',
       headers: {
         Accept: 'application/octet-stream'
-      },
+      }
     })
     const block = await response.arrayBuffer()
     return block
@@ -111,14 +110,14 @@ module.exports = class RemoteHost {
         'jlinx-signature': signature.toString('hex'),
         Accept: 'application/json'
       },
-      body: block,
+      body: block
     })
     const { length } = await response.json()
     debug('append success', { id, length })
     return length
   }
 
-  async waitForUpdate(id, length){
+  async waitForUpdate (id, length) {
     const index = length - 1
     const url = this._url(id, index, 'next')
     await fetch(url)

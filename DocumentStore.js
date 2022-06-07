@@ -4,8 +4,7 @@ module.exports = class DocumentStore {
     this._store = store
   }
 
-  async ids(){
+  async ids () {
     return (await this._store.get('ids')) || []
   }
-
 }

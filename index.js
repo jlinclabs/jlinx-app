@@ -17,11 +17,11 @@ module.exports = class JlinxClient {
 
     this.vault = new Vault({
       path: opts.vaultPath,
-      key: opts.vaultKey,
+      key: opts.vaultKey
     })
 
     this.host = new RemoteHost({
-      url: opts.hostUrl,
+      url: opts.hostUrl
     })
 
     this._ready = this._open()
@@ -43,7 +43,7 @@ module.exports = class JlinxClient {
     await this.ready()
     console.log('this.vault', this.vault)
     console.log('this.vault.constructor', this.vault.constructor)
-    console.log('this.vault.constructor', this.vault.constructor+'')
+    console.log('this.vault.constructor', this.vault.constructor + '')
     console.log('this.vault.keys', this.vault.keys)
     const ownerSigningKeys = await this.vault.keys.createSigningKeyPair()
     const ownerSigningKey = ownerSigningKeys.publicKey
@@ -52,18 +52,18 @@ module.exports = class JlinxClient {
     )
     const id = await this.host.create({
       ownerSigningKey,
-      ownerSigningKeyProof,
+      ownerSigningKeyProof
     })
     await this.vault.docs.put(id, {
       ownerSigningKey: keyToString(ownerSigningKey),
       writable: true,
-      length: 0,
+      length: 0
     })
     const doc = await Document.open({
       host: this.host,
       id,
       ownerSigningKeys,
-      length: 0,
+      length: 0
     })
     debug('created', { doc })
     return doc
@@ -74,19 +74,19 @@ module.exports = class JlinxClient {
     const docRecord = await this.vault.docs.get(id)
     debug('get', { id, docRecord })
     const ownerSigningKeys = (docRecord && docRecord.ownerSigningKey)
-    ? await this.vault.keys.get(keyToBuffer(docRecord.ownerSigningKey))
-    : undefined
+      ? await this.vault.keys.get(keyToBuffer(docRecord.ownerSigningKey))
+      : undefined
     debug('get', { id, ownerSigningKeys })
     const doc = await Document.open({
       host: this.host,
       id,
-      ownerSigningKeys,
+      ownerSigningKeys
     })
     debug('get', doc)
     return doc
   }
 
-  async all(){
+  async all () {
     // this.vault.myDocIds
     const ids = await this.vault.docs.ids()
     console.log({ ids })
@@ -96,15 +96,14 @@ module.exports = class JlinxClient {
     return docs
   }
 
-
   // METHODS BELOW HERE SHOULD BE MOVED TO PLUGINS
 
-  async createAppUser(opts){
+  async createAppUser (opts) {
     const doc = await this.create()
     await doc.appendJson({
       type: 'JlinxAppUser',
       encoding: 'json',
-      followupUrl: opts.followupUrl,
+      followupUrl: opts.followupUrl
       // TODO signed by our public key
     })
     return doc
