@@ -58,6 +58,7 @@ module.exports = class Document {
     let entry = this._entries[index]
     if (!entry) {
       entry = await this.host.getEntry(this.id, index)
+      debug('get', { index, entry })
       this._entries[index] = entry
     }
     debug('get', index, entry)
@@ -121,6 +122,6 @@ module.exports = class Document {
 
   // getJson is TEMP until we make real document subscalles
   async getJson (index) {
-    return JSON.stringify(await this.get(index))
+    return JSON.parse(await this.get(index))
   }
 }

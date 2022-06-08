@@ -1,6 +1,6 @@
 const Path = require('path')
 const Debug = require('debug')
-
+const b4a = require('b4a')
 const debug = Debug('jlinx:client:remotehost')
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
@@ -95,8 +95,11 @@ module.exports = class RemoteHost {
         Accept: 'application/octet-stream'
       }
     })
-    const block = await response.arrayBuffer()
-    return block
+    let entry = await response.arrayBuffer()
+    debug('getEntry', { id, index, entry })
+    entry = b4a.from(entry)
+    debug('getEntry', { id, index, entry })
+    return entry
   }
 
   async append (id, block, signature) {

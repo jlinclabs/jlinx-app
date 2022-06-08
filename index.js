@@ -2,7 +2,8 @@ const Debug = require('debug')
 
 const {
   keyToString,
-  keyToBuffer
+  keyToBuffer,
+  createRandomString
 } = require('jlinx-util')
 
 const Vault = require('jlinx-vault')
@@ -103,7 +104,20 @@ module.exports = class JlinxClient {
     await doc.appendJson({
       type: 'JlinxAppUser',
       encoding: 'json',
-      followupUrl: opts.followupUrl
+      followupUrl: opts.followupUrl,
+      signupSecret: createRandomString(16)
+      // TODO signed by our public key
+    })
+    return doc
+  }
+
+  async createAppAccount (opts) {
+    const doc = await this.create()
+    await doc.appendJson({
+      ...opts,
+      type: 'JlinxAppAccount',
+      encoding: 'json',
+      // followupUrl: opts.followupUrl
       // TODO signed by our public key
     })
     return doc
