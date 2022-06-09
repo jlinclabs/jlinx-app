@@ -124,4 +124,10 @@ module.exports = class Document {
   async getJson (index) {
     return JSON.parse(await this.get(index))
   }
+
+    // getJson is TEMP until we make real document subscalles
+  async allJson (index) {
+    const all = await this.all()
+    return all.map(JSON.parse)
+  }
 }
