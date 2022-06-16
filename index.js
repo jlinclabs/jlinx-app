@@ -9,20 +9,17 @@ const {
 const Vault = require('jlinx-vault')
 const RemoteHost = require('./RemoteHost')
 const Document = require('./Document')
-const Ledger = require('./Ledger')
+const DOC_TYPES = require('./docTypes')
+
 
 const debug = Debug('jlinx:client')
 
-const DOC_TYPES = {
-  raw: function(doc){ return doc },
-  ledger: Ledger,
-  // file: File,
-  AppUser
-}
-
 module.exports = class JlinxClient {
+
   constructor (opts) {
     debug(opts)
+
+    this.docTypes = Object.create(DOC_TYPES)
 
     this.vault = new Vault({
       path: opts.vaultPath,
@@ -50,10 +47,10 @@ module.exports = class JlinxClient {
 
   async create (opts = {}) {
     debug('create', opts)
-    const { type = 'raw' } = opts
-    const TypeClass = DOC_TYPES[type]
+    const { docType = 'Raw' } = opts
+    const TypeClass = this.docTypes[docType]
     if (!TypeClass){
-      throw new Error(`invalid doc type "${type}"`)
+      throw new Error(`invalid doc type "${docType}"`)
     }
     await this.ready()
     const ownerSigningKeys = await this.vault.keys.createSigningKeyPair()
@@ -78,6 +75,7 @@ module.exports = class JlinxClient {
     })
     const instance = new TypeClass(doc)
     if (instance.init) await instance.init()
+    else await instance.ready()
     debug('created', instance)
     return instance
   }
@@ -97,9 +95,9 @@ module.exports = class JlinxClient {
     })
     const header = await doc.header()
     debug('get', {doc, header})
-    // look at the doc header and return wrapping class instances?
-    if (header && header.type && DOC_TYPES[header.type]){
-      const TypeClass = DOC_TYPES[header.type]
+
+    if (header && header.docType && this.docTypes[header.docType]){
+      const TypeClass = this.docTypes[header.docType]
       doc = new TypeClass(doc)
     }
     debug('get ->', doc)

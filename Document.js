@@ -56,6 +56,25 @@ module.exports = class Document {
     return this._header
   }
 
+  async setHeader(header = {}) {
+    await this.update()
+    if (this.length > 0){
+      throw new Error(
+        `cannot set header for non-empty document. ` +
+        `id="${doc.id}" ` +
+        `length=${doc.length}`
+      )
+    }
+    header = JSON.stringify({
+      contentType: 'application/octet-stream',
+      ...header,
+      host: this.host.url,
+    })
+    this._header = JSON.parse(header)
+    await this.append([b4a.from(header)])
+    return this._header
+  }
+
   async update () {
     const header = await this.header()
     this.length = header.length || 0

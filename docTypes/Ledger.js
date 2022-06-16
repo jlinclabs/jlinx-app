@@ -1,28 +1,20 @@
 const Debug = require('debug')
 const b4a = require('b4a')
 
-const debug = Debug('jlinx:client:ledger')
+const debug = Debug('jlinx:client:Ledger')
 
 module.exports = class Ledger {
-
-  // static async open (opts) {
-  //   const DocumentClass = Document
-  //   // if opts changes type
-  //   const doc = new DocumentClass(opts)
-  //   await doc.ready()
-  //   return doc
-  // }
 
   constructor (doc) {
     this.doc = doc
     this._cache = []
   }
 
-  get type () { return 'ledger' }
+  get docType () { return 'Ledger' }
   get id () { return this.doc.id }
   get length () { return this.doc.length }
   get writable () { return this.doc.writable }
-  get contentType () { return this._contentType }
+  get contentType () { return this.doc._header?.contentType }
 
   [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
     let indent = ''
@@ -35,10 +27,15 @@ module.exports = class Ledger {
       indent + ')'
   }
 
+  async header () {
+    if (!this._header)
+      this._header = await this.doc.header()
+    return this._header
+  }
+
   async ready () {
     await this.doc.ready()
-    const header = await this.doc.header()
-    this._contentType = header.contentType
+    await this.header()
   }
 
   update () { return this.doc.update() }
@@ -52,18 +49,16 @@ module.exports = class Ledger {
   }
 
   async init () {
-    this.update()
+    debug('Ledger INIT', this)
+    await this.update()
     if (this.doc.length > 0){
       throw new Error(`cannot initialize Ledger in non-empty document. legnth=${doc.length}`)
     }
-    await this.append([
-      {
-        type: this.type,
-        // docVersion: '1.0.0',
-        contentType: 'application/json',
-        host: this.doc.host.url,
-      }
-    ])
+    await this.doc.setHeader({
+      docType: this.docType,
+      contentType: 'application/json',
+    })
+    debug('Ledger INIT done', this)
   }
 
   async get (index) {
