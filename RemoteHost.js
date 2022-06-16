@@ -71,7 +71,7 @@ module.exports = class RemoteHost {
     // TODO close persistant http connections
   }
 
-  async getLength (id) {
+  async getHeader (id) {
     // TODO validate id
     // /^\/([A-Za-z0-9\-_]{43})$/
     const url = this._url(id)
@@ -81,9 +81,9 @@ module.exports = class RemoteHost {
         Accept: 'application/json'
       }
     })
-    const { length } = await response.json()
-    debug({ length })
-    return length
+    const header = await response.json()
+    debug({header})
+    return header
   }
 
   async getEntry (id, index) {

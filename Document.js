@@ -19,9 +19,12 @@ module.exports = class Document {
     this.writable = !!opts.ownerSigningKeys
     // set on create of loaded from cache
     this.length = opts.length
-    this._entries = opts._entries || []
+    this._cache = opts._cache || []
     this._opening = this._open()
   }
+
+  get type () { return 'raw' }
+  get contentType () { return 'raw buffer or octetstream' }
 
   [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
     let indent = ''
@@ -47,19 +50,26 @@ module.exports = class Document {
     debug('open', this)
   }
 
+  async header () {
+    if (!this._header)
+      this._header = await this.host.getHeader(this.id)
+    return this._header
+  }
+
   async update () {
-    this.length = await this.host.getLength(this.id)
+    const header = await this.header()
+    this.length = header.length || 0
   }
 
   async get (index) {
     // await this.host.ready() // ???
     // await this.ready() // READY uses get lol
     if (index > this.length - 1) return
-    let entry = this._entries[index]
+    let entry = this._cache[index]
     if (!entry) {
       entry = await this.host.getEntry(this.id, index)
       debug('get', { index, entry })
-      this._entries[index] = entry
+      this._cache[index] = entry
     }
     debug('get', index, entry)
     return entry
@@ -107,27 +117,27 @@ module.exports = class Document {
     return this.all()
   }
 
-  toJSON () {
-    return {
-      id: this.id,
-      length: this.length,
-      writable: this.writable
-    }
-  }
+  // toJSON () {
+  //   return {
+  //     id: this.id,
+  //     length: this.length,
+  //     writable: this.writable
+  //   }
+  // }
 
-  // appendJson is TEMP until we make real document subscalles
-  async appendJson (json) {
-    await this.append([b4a.from(JSON.stringify(json))])
-  }
+  // // appendJson is TEMP until we make real document subscalles
+  // async appendJson (json) {
+  //   await this.append([b4a.from(JSON.stringify(json))])
+  // }
 
-  // getJson is TEMP until we make real document subscalles
-  async getJson (index) {
-    return JSON.parse(await this.get(index))
-  }
+  // // getJson is TEMP until we make real document subscalles
+  // async getJson (index) {
+  //   return JSON.parse(await this.get(index))
+  // }
 
-    // getJson is TEMP until we make real document subscalles
-  async allJson (index) {
-    const all = await this.all()
-    return all.map(JSON.parse)
-  }
+  //   // getJson is TEMP until we make real document subscalles
+  // async allJson (index) {
+  //   const all = await this.all()
+  //   return all.map(JSON.parse)
+  // }
 }

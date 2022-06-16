@@ -9,8 +9,16 @@ const {
 const Vault = require('jlinx-vault')
 const RemoteHost = require('./RemoteHost')
 const Document = require('./Document')
+const Ledger = require('./Ledger')
 
 const debug = Debug('jlinx:client')
+
+const DOC_TYPES = {
+  raw: function(doc){ return doc },
+  ledger: Ledger,
+  // file: File,
+  AppUser
+}
 
 module.exports = class JlinxClient {
   constructor (opts) {
@@ -41,11 +49,13 @@ module.exports = class JlinxClient {
   }
 
   async create (opts = {}) {
+    debug('create', opts)
+    const { type = 'raw' } = opts
+    const TypeClass = DOC_TYPES[type]
+    if (!TypeClass){
+      throw new Error(`invalid doc type "${type}"`)
+    }
     await this.ready()
-    console.log('this.vault', this.vault)
-    console.log('this.vault.constructor', this.vault.constructor)
-    console.log('this.vault.constructor', this.vault.constructor + '')
-    console.log('this.vault.keys', this.vault.keys)
     const ownerSigningKeys = await this.vault.keys.createSigningKeyPair()
     const ownerSigningKey = ownerSigningKeys.publicKey
     const ownerSigningKeyProof = await ownerSigningKeys.sign(
@@ -53,7 +63,7 @@ module.exports = class JlinxClient {
     )
     const id = await this.host.create({
       ownerSigningKey,
-      ownerSigningKeyProof
+      ownerSigningKeyProof,
     })
     await this.vault.docs.put(id, {
       ownerSigningKey: keyToString(ownerSigningKey),
@@ -66,8 +76,10 @@ module.exports = class JlinxClient {
       ownerSigningKeys,
       length: 0
     })
-    debug('created', { doc })
-    return doc
+    const instance = new TypeClass(doc)
+    if (instance.init) await instance.init()
+    debug('created', instance)
+    return instance
   }
 
   async get (id) {
@@ -78,12 +90,19 @@ module.exports = class JlinxClient {
       ? await this.vault.keys.get(keyToBuffer(docRecord.ownerSigningKey))
       : undefined
     debug('get', { id, ownerSigningKeys })
-    const doc = await Document.open({
+    let doc = await Document.open({
       host: this.host,
       id,
       ownerSigningKeys
     })
-    debug('get', doc)
+    const header = await doc.header()
+    debug('get', {doc, header})
+    // look at the doc header and return wrapping class instances?
+    if (header && header.type && DOC_TYPES[header.type]){
+      const TypeClass = DOC_TYPES[header.type]
+      doc = new TypeClass(doc)
+    }
+    debug('get ->', doc)
     return doc
   }
 
@@ -99,24 +118,46 @@ module.exports = class JlinxClient {
 
   // METHODS BELOW HERE SHOULD BE MOVED TO PLUGINS
 
-  async createAppUser (opts) {
+  async createLedger (opts) {
     const doc = await this.create()
-    await doc.appendJson({
-      type: 'JlinxAppUser',
-      encoding: 'json',
-      followupUrl: opts.followupUrl,
-      signupSecret: createRandomString(16)
-      // TODO signed by our public key
-    })
-    return doc
+    const ledger = await Ledger.init(doc)
+    return ledger
   }
 
-  async createAppAccount (opts) {
-    const doc = await this.create()
-    await doc.appendJson({
+  async createVersionedFlatFile () {
+
+  }
+
+  async createAppUser (opts) {
+    return await AppUser.create({
+      followupUrl: opts.followupUrl,
+    })
+    // const ledger = await this.createLedger()
+    // await ledger.append({
+    //   type: 'JlinxAppUser',
+    //   encoding: 'json',
+    //   followupUrl: opts.followupUrl,
+    //   signupSecret: createRandomString(16)
+    //   // TODO signed by our public key
+    // })
+    // return doc
+  }
+
+  async createAppAccount ({ appUserId }) {
+    debug('createAppAccount', { appUserId })
+    const appUser = await this.get(appUserId)
+    debug('createAppAccount', { appUser })
+    const appUserE1 = await appUser.getJson(0)
+    debug('createAppAccount', { appUserE1 })
+    const { followupUrl, signupSecret } = appUserE1
+
+
+    const ledger = await this.createLedger()
+
+    await ledger.append({
       ...opts,
-      type: 'JlinxAppAccount',
-      encoding: 'json',
+      // type: 'JlinxAppAccount',
+      // encoding: 'json',
       // followupUrl: opts.followupUrl
       // TODO signed by our public key
     })
