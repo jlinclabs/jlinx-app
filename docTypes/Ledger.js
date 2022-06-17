@@ -48,15 +48,21 @@ module.exports = class Ledger {
     return JSON.parse(buffer)
   }
 
-  async init () {
+  async init (header = {}) {
     debug('Ledger INIT', this)
     await this.update()
     if (this.doc.length > 0){
-      throw new Error(`cannot initialize Ledger in non-empty document. legnth=${doc.length}`)
+      throw new Error(
+        `cannot initialize ${this.docType} ` +
+        `in non-empty document. ` +
+        `id="${doc.id}" ` +
+        `length=${doc.length}`
+      )
     }
     await this.doc.setHeader({
       docType: this.docType,
       contentType: 'application/json',
+      ...header
     })
     debug('Ledger INIT done', this)
   }
@@ -83,18 +89,29 @@ module.exports = class Ledger {
 
   waitForUpdate(){ return this.doc.waitForUpdate() }
 
-  async all () {
-    await this.ready()
+  async entries () {
+    // debug('entries', this.id, { length: this.length })
+    // await this.update()
+    const { id, length } = this
+    debug('entries', { id, length })
     if (this.length === 0) return []
-    return await Promise.all(
+    debug('entries getting', { id, length })
+    const entries = await Promise.all(
       Array(this.length).fill()
-        .map(async (_, i) => this.get(i))
+        .map((_, i) => this.get(i))
     )
+    debug('GOT entries', {
+      id, length, entries
+    })
+    if (entries.length !== length){
+      throw new Error(`Ledger fucked up`)
+    }
+    return entries
   }
 
-  async value(){
-    return await this.all()
-  }
+  // async value(){
+  //   return await this.all()
+  // }
 
 }
 

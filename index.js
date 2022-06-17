@@ -3,14 +3,13 @@ const Debug = require('debug')
 const {
   keyToString,
   keyToBuffer,
-  createRandomString
 } = require('jlinx-util')
-
 const Vault = require('jlinx-vault')
+
+const { postJSON } = require('./util')
 const RemoteHost = require('./RemoteHost')
 const Document = require('./Document')
 const DOC_TYPES = require('./docTypes')
-
 
 const debug = Debug('jlinx:client')
 
@@ -47,7 +46,7 @@ module.exports = class JlinxClient {
 
   async create (opts = {}) {
     debug('create', opts)
-    const { docType = 'Raw' } = opts
+    const { docType = 'Raw', ...initOpts } = opts
     const TypeClass = this.docTypes[docType]
     if (!TypeClass){
       throw new Error(`invalid doc type "${docType}"`)
@@ -73,8 +72,8 @@ module.exports = class JlinxClient {
       ownerSigningKeys,
       length: 0
     })
-    const instance = new TypeClass(doc)
-    if (instance.init) await instance.init()
+    const instance = new TypeClass(doc, this)
+    if (instance.init) await instance.init(initOpts)
     else await instance.ready()
     debug('created', instance)
     return instance
@@ -98,7 +97,7 @@ module.exports = class JlinxClient {
 
     if (header && header.docType && this.docTypes[header.docType]){
       const TypeClass = this.docTypes[header.docType]
-      doc = new TypeClass(doc)
+      doc = new TypeClass(doc, this)
     }
     debug('get ->', doc)
     return doc
@@ -116,49 +115,49 @@ module.exports = class JlinxClient {
 
   // METHODS BELOW HERE SHOULD BE MOVED TO PLUGINS
 
-  async createLedger (opts) {
-    const doc = await this.create()
-    const ledger = await Ledger.init(doc)
-    return ledger
-  }
-
-  async createVersionedFlatFile () {
-
-  }
 
   async createAppUser (opts) {
-    return await AppUser.create({
+    const appUser = await this.create({
+      docType: 'AppUser',
+    })
+    debug('createAppUser created', appUser)
+    await appUser.offerAccount({
       followupUrl: opts.followupUrl,
     })
-    // const ledger = await this.createLedger()
-    // await ledger.append({
-    //   type: 'JlinxAppUser',
-    //   encoding: 'json',
-    //   followupUrl: opts.followupUrl,
-    //   signupSecret: createRandomString(16)
-    //   // TODO signed by our public key
-    // })
-    // return doc
+    debug('createAppUser offered account', appUser)
+    return appUser
   }
 
   async createAppAccount ({ appUserId }) {
     debug('createAppAccount', { appUserId })
     const appUser = await this.get(appUserId)
     debug('createAppAccount', { appUser })
-    const appUserE1 = await appUser.getJson(0)
-    debug('createAppAccount', { appUserE1 })
-    const { followupUrl, signupSecret } = appUserE1
+    const appUserValue = await appUser.value()
+    debug('createAppAccount', { appUserValue })
+    const { followupUrl, signupSecret } = appUserValue
 
-
-    const ledger = await this.createLedger()
-
-    await ledger.append({
-      ...opts,
-      // type: 'JlinxAppAccount',
-      // encoding: 'json',
-      // followupUrl: opts.followupUrl
-      // TODO signed by our public key
+    const appAccount = await this.create({
+      docType: 'AppAccount',
+      appUserId,
+      signupSecret,
     })
-    return doc
+
+    const appUserUpdated = appUser.waitForUpdate() // await below
+
+    // post AppAccount.id to followupUrl
+    const response = await postJSON(followupUrl, {
+      appAccountId: appAccount.id,
+    })
+    debug({ response })
+
+    debug('waiting for appUser to be updated')
+    await appUserUpdated
+    debug('appUser updated!')
+    await appUser.update()
+    // console.log({ appUser })
+    // const appUserE2 = await appUser.getJson(1)
+    // debug('accounts.add', { appUserE2 })
+
+    return appAccount
   }
 }

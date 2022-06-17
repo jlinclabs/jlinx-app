@@ -38,6 +38,23 @@ module.exports = class Document {
 
   ready () { return this._opening }
 
+
+  async header () {
+    if (!this._header)
+      this._header = await this.host.getHeader(this.id)
+    return this._header
+  }
+
+  async update () {
+    delete this._header
+    const header = await this.header()
+    if (typeof header.length !== 'number'){
+      console.error(`length missing from header`, header)
+      throw new Error(`length missing from header`)
+    }
+    this.length = header.length || 0
+  }
+
   async _open () {
     if (typeof this.length !== 'number') await this.update()
     // if (this.length > 0){
@@ -48,12 +65,6 @@ module.exports = class Document {
     //   // decode/parse entries
     // }
     debug('open', this)
-  }
-
-  async header () {
-    if (!this._header)
-      this._header = await this.host.getHeader(this.id)
-    return this._header
   }
 
   async setHeader(header = {}) {
@@ -73,11 +84,6 @@ module.exports = class Document {
     this._header = JSON.parse(header)
     await this.append([b4a.from(header)])
     return this._header
-  }
-
-  async update () {
-    const header = await this.header()
-    this.length = header.length || 0
   }
 
   async get (index) {
