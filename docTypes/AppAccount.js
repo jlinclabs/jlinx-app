@@ -11,7 +11,6 @@ module.exports = class AppAccount {
   constructor (doc, jlinx) {
     this.ledger = new Ledger(doc)
     this.jlinx = jlinx
-    this.id = doc.id
   }
 
   [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
@@ -21,8 +20,9 @@ module.exports = class AppAccount {
       indent + '  id: ' + opts.stylize(this.id, 'string') + '\n' +
       indent + '  writable: ' + opts.stylize(this.writable, 'boolean') + '\n' +
       indent + '  version: ' + opts.stylize(this.version, 'number') + '\n' +
-      // indent + '  followupUrl: ' + opts.stylize(this.followupUrl, 'string') + '\n' +
-      // indent + '  signupSecret: ' + opts.stylize(this.signupSecret, 'string') + '\n' +
+      indent + '  state: ' + opts.stylize(this.state, 'string') + '\n' +
+      indent + '  host: ' + opts.stylize(this.host, 'string') + '\n' +
+      indent + '  appUserId: ' + opts.stylize(this.appUserId, 'string') + '\n' +
       indent + ')'
   }
 
@@ -40,19 +40,20 @@ module.exports = class AppAccount {
   }
 
   async update(){
-    await this.leger.ready()
+    await this.ledger.ready()
     await this.ledger.update()
     if (
       !this._value ||
       this._value.version < this.version
     ){
-      this._value = this._update()
+      this._value = await this._update()
     }
   }
 
   async ready () {
     await this.ledger.ready()
   }
+
   async _update() {
     const entries = await this.ledger.entries()
     const value = {
@@ -62,16 +63,16 @@ module.exports = class AppAccount {
     entries.forEach((entry, index) => {
       if (index === 0){
         value._header = entry
-      }else if (entry.event === 'accountOffered'){
-        value.state = 'offered'
-        value.followupUrl = entry.followupUrl
+
+      }else if (entry.event === 'AccountAccepted'){
+        value.state = 'open'
+        value.host = entry.host
+        value.appUserId = entry.appUserId
         value.signupSecret = entry.signupSecret
-      }else if (entry.event === 'accountOpened'){
-        value.state = 'opened'
-      }else if (entry.event === 'accountOfferRescinded'){
+
+      }else if (entry.event === 'AccountRejected'){
         value.state = 'closed'
-      }else if (entry.event === 'accountClosed'){
-        value.state = 'closed'
+
       }else {
         value._ignoredEntries = value._ignoredEntries || []
         value._ignoredEntries.push(entries)
@@ -84,33 +85,30 @@ module.exports = class AppAccount {
     return value
   }
 
-  // async update(){
-  //   await this.ledger.update()
-  //   const entries = await this.ledger.entries()
-  //   entries.forEach((entry, index) => {
-  //     if (!entry.event){ return }
-  //     if (entry.event === 'AccountAccepted'){
-  //       this.appUserId = entry.appUserId
-  //       this.signupSecret = entry.signupSecret
-  //     }
-  //   })
-  //   return this
-  // }
+  // STATE
+  get state () { return this._value?.state }
+  get host () { return this._value?.host }
+  get appUserId () { return this._value?.appUserId }
+  get signupSecret () { return this._value?.signupSecret }
 
-  async acceptAccount (opts = {}) {
-    const {
-      appUserId,
-      signupSecret,
-    } = opts
-    if (!appUserId){
-      throw new Error(`AppAccount#init requires appUserId`)
+  // MUTATORS
+
+  async acceptAppUserOffer (appUser) {
+    debug('acceptAppUserOffer', appUser)
+    if (!appUser.isOffered){
+      throw new Error(`invalid appUser`)
     }
-    await this.ledger.append({
-      event: 'AccountAccepted',
-      appUserId,
-      signupSecret,
-    })
+    await this.ledger.append([
+      {
+        event: 'AccountAccepted',
+        appUserId: appUser.id,
+        signupSecret: appUser.signupSecret,
+        host: appUser.host,
+      }
+    ])
+    await this.update()
   }
+
   async rejectAccount (opts = {}) {
   }
 

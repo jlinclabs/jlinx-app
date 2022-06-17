@@ -2,6 +2,7 @@ const Debug = require('debug')
 const { URL } = require('url')
 const { createRandomString } = require('jlinx-util')
 
+const { postJSON } = require('../util')
 const Ledger = require('./Ledger')
 
 const debug = Debug('jlinx:client:AppUser')
@@ -9,8 +10,9 @@ const debug = Debug('jlinx:client:AppUser')
 // an app's account for a user
 module.exports = class AppUser {
 
-  constructor (doc) {
+  constructor (doc, jlinx) {
     this.ledger = new Ledger(doc)
+    this.jlinx = jlinx
   }
 
   [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
@@ -22,6 +24,7 @@ module.exports = class AppUser {
       indent + '  writable: ' + opts.stylize(this.writable, 'boolean') + '\n' +
       indent + '  version: ' + opts.stylize(this.version, 'number') + '\n' +
       indent + '  state: ' + opts.stylize(value.state, 'string') + '\n' +
+      indent + '  host: ' + opts.stylize(value.host, 'string') + '\n' +
       indent + '  followupUrl: ' + opts.stylize(value.followupUrl, 'string') + '\n' +
       indent + '  signupSecret: ' + opts.stylize(value.signupSecret, 'string') + '\n' +
       indent + ')'
@@ -47,26 +50,14 @@ module.exports = class AppUser {
       !this._value ||
       this._value.version < this.version
     ){
-      this._value = this._update()
+      this._value = await this._update()
     }
   }
 
   ready () { return this.update() }
 
   async _update() {
-    console.log('AppUser _update GETTING ENTRIES', {
-      version: this.version,
-      id: this.id,
-      ledger: this.ledger,
-    })
     const entries = await this.ledger.entries()
-
-    console.log('AppUser _update GOT ENTRIES', {
-      version: this.version,
-      id: this.id,
-      ledger: this.ledger,
-      entries,
-    })
     const value = {
       version: this.version,
       id: this.id,
@@ -76,15 +67,17 @@ module.exports = class AppUser {
     entries.forEach((entry, index) => {
       if (index === 0){
         value._header = entry
-      }else if (entry.event === 'accountOffered'){
+      }else if (entry.event === 'AccountOffered'){
         value.state = 'offered'
         value.followupUrl = entry.followupUrl
         value.signupSecret = entry.signupSecret
-      }else if (entry.event === 'accountOpened'){
-        value.state = 'opened'
-      }else if (entry.event === 'accountOfferRescinded'){
+      }else if (entry.event === 'AccountOpened'){
+        value.state = 'open'
+        value.appAccountId = entry.appAccountId
+        value.userMetadata = entry.userMetadata
+      }else if (entry.event === 'AccountOfferRescinded'){
         value.state = 'closed'
-      }else if (entry.event === 'accountClosed'){
+      }else if (entry.event === 'AccountClosed'){
         value.state = 'closed'
       }else {
         value._ignoredEntries = value._ignoredEntries || []
@@ -99,11 +92,27 @@ module.exports = class AppUser {
   }
 
   // STATE
+  get state () { return this._value?.state }
+  get host () { return this._value?.host }
+  get followupUrl () { return this._value?.followupUrl }
+  get signupSecret () { return this._value?.signupSecret }
+  get isOffered (){ return this._value?.state === 'offered' }
+  get appAccountId () { return this._value?.appAccountId }
+  get userMetadata () { return this._value?.userMetadata }
 
-  isOfferingAccount(){
-    return this._value.state === 'opened'
+  async getSessionRequests(){
+    const entries = await this.ledger.entries()
+    const sessionRequests = {}
+    for (const entry of entries){
+      if (entry.event === 'SessionRequested'){
+        sessionRequests[entry.sessionRequestId] = entry
+      }
+      // if (entry.event === 'Session??????'){
+      //   delete sessionRequests[entry.sessionRequestId]
+      // }
+    }
+    return Object.values(sessionRequests)
   }
-
 
   // MUTATORS
 
@@ -116,7 +125,7 @@ module.exports = class AppUser {
     }
     await this.ledger.append([
       {
-        event: 'accountOffered',
+        event: 'AccountOffered',
         followupUrl,
         signupSecret: createRandomString(16)
       }
@@ -124,5 +133,47 @@ module.exports = class AppUser {
     // await this.update()
   }
 
+  async acceptOffer () {
+    if (!this.isOffered){
+      throw new Error(`failed to accept app user offer`)
+    }
+    const appAccount = await this.jlinx.create({
+      docType: 'AppAccount',
+    })
+    await appAccount.acceptAppUserOffer(this)
+
+    const nextUpdate = this.waitForUpdate() // await below
+
+    const response = await postJSON(this.followupUrl, {
+      appAccountId: appAccount.id,
+    })
+    debug({ response })
+
+    debug('waiting for appUser to be updated')
+    await nextUpdate
+    debug('appUser updated!')
+    await this.update()
+    return appAccount
+  }
+
+  async openAccount({ appAccountId, userMetadata }){
+    await this.ledger.append([
+      {
+        event: 'AccountOpened',
+        appAccountId,
+        userMetadata
+      }
+    ])
+  }
+
+  async requestSession({ sourceInfo }){
+    await this.ledger.append([
+      {
+        event: 'SessionRequested',
+        sessionRequestId: createRandomString(),
+        sourceInfo,
+      }
+    ])
+  }
 }
 

@@ -131,10 +131,12 @@ module.exports = class JlinxClient {
   async createAppAccount ({ appUserId }) {
     debug('createAppAccount', { appUserId })
     const appUser = await this.get(appUserId)
+    await appUser.update()
     debug('createAppAccount', { appUser })
-    const appUserValue = await appUser.value()
-    debug('createAppAccount', { appUserValue })
-    const { followupUrl, signupSecret } = appUserValue
+    // const appUserValue = await appUser.value()
+    // debug('createAppAccount', { appUserValue })
+    const { followupUrl, signupSecret } = appUser
+    debug('createAppAccount', { followupUrl, signupSecret })
 
     const appAccount = await this.create({
       docType: 'AppAccount',
