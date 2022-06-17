@@ -27,6 +27,7 @@ module.exports = class AppUser {
       indent + '  host: ' + opts.stylize(value.host, 'string') + '\n' +
       indent + '  followupUrl: ' + opts.stylize(value.followupUrl, 'string') + '\n' +
       indent + '  signupSecret: ' + opts.stylize(value.signupSecret, 'string') + '\n' +
+      indent + '  appAccountId: ' + opts.stylize(value.appAccountId, 'string') + '\n' +
       indent + ')'
   }
 
