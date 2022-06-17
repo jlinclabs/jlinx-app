@@ -112,7 +112,22 @@ module.exports = class AppAccount {
   async rejectAccount (opts = {}) {
   }
 
-
+  async resolveSessionRequest(sessionRequestId, accept){
+    // TODO ensure sessionRequestId is legit
+    const appUser = await this.jlinx.get(this.appUserId)
+    const sessionRequest = await appUser.getSessionRequests()
+    const ids = sessionRequest.map(sr => sr.sessionRequestId)
+    if (!ids.includes(sessionRequestId)){
+      throw new Error(`sessionRequestId looks invalid ${sessionRequestId}`)
+    }
+    await this.ledger.append([
+      {
+        event: 'SessionRequestResolved',
+        sessionRequestId,
+        accept: !!accept,
+      }
+    ])
+  }
 
   // async getFollowupUrl(){
   //   await this.ledger.update()
