@@ -59,6 +59,7 @@ module.exports = class AppAccount {
     const value = {
       version: this.version,
       id: this.id,
+      sessionRequestResolutions: {},
     }
     entries.forEach((entry, index) => {
       if (index === 0){
@@ -70,8 +71,11 @@ module.exports = class AppAccount {
         value.appUserId = entry.appUserId
         value.signupSecret = entry.signupSecret
 
-      }else if (entry.event === 'AccountRejected'){
-        value.state = 'closed'
+      // }else if (entry.event === 'AccountClosed'){
+        //   value.state = 'closed'
+
+      }else if (entry.event === 'SessionRequestResolved'){
+        value.sessionRequestResolutions[entry.sessionRequestId] = entry
 
       }else {
         value._ignoredEntries = value._ignoredEntries || []
@@ -90,6 +94,11 @@ module.exports = class AppAccount {
   get host () { return this._value?.host }
   get appUserId () { return this._value?.appUserId }
   get signupSecret () { return this._value?.signupSecret }
+
+
+  async getSessionRequestResolution(sessionRequestId){
+    return this._value?.sessionRequestResolutions[sessionRequestId]
+  }
 
   // MUTATORS
 
@@ -124,7 +133,7 @@ module.exports = class AppAccount {
       {
         event: 'SessionRequestResolved',
         sessionRequestId,
-        accept: !!accept,
+        accepted: !!accept,
       }
     ])
   }

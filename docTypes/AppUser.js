@@ -65,6 +65,8 @@ module.exports = class AppUser {
       state: 'init',
     }
 
+    // consider ensuring each
+
     entries.forEach((entry, index) => {
       if (index === 0){
         value._header = entry
@@ -76,8 +78,8 @@ module.exports = class AppUser {
         value.state = 'open'
         value.appAccountId = entry.appAccountId
         value.userMetadata = entry.userMetadata
-      }else if (entry.event === 'AccountOfferRescinded'){
-        value.state = 'closed'
+      // }else if (entry.event === 'AccountOfferRescinded'){
+      //   value.state = 'closed'
       }else if (entry.event === 'AccountClosed'){
         value.state = 'closed'
       }else {
@@ -115,6 +117,11 @@ module.exports = class AppUser {
     return Object.values(sessionRequests)
   }
 
+  async sessionRequest(id){
+    const sessionRequests = await this.getSessionRequests()
+    return sessionRequests.find(sr => sr.sessionRequestId === id)
+  }
+
   // MUTATORS
 
   async offerAccount (opts = {}) {
@@ -134,6 +141,7 @@ module.exports = class AppUser {
     // await this.update()
   }
 
+  // TODO consolder moving this to AppAccount??
   async acceptOffer () {
     if (!this.isOffered){
       throw new Error(`failed to accept app user offer`)
@@ -168,13 +176,15 @@ module.exports = class AppUser {
   }
 
   async requestSession({ sourceInfo }){
+    const sessionRequestId = createRandomString()
     await this.ledger.append([
       {
         event: 'SessionRequested',
-        sessionRequestId: createRandomString(),
+        sessionRequestId,
         sourceInfo,
       }
     ])
+    return sessionRequestId
   }
 }
 
