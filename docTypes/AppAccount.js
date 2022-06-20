@@ -1,5 +1,6 @@
 const Debug = require('debug')
 const b4a = require('b4a')
+const { createRandomString } = require('jlinx-util')
 
 const Ledger = require('./Ledger')
 
@@ -136,6 +137,17 @@ module.exports = class AppAccount {
         accepted: !!accept,
       }
     ])
+  }
+
+  async generateOnetimeLoginLink(){
+    const token = createRandomString()
+    await this.ledger.append([
+      {
+        event: 'GeneratedOnetimeLoginLink',
+        token,
+      }
+    ])
+    return `https://${this.host}/jlinx/login/onetime/${this.appUserId}/${token}`
   }
 
   // async getFollowupUrl(){

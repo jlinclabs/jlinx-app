@@ -106,7 +106,6 @@ module.exports = class JlinxClient {
   async all () {
     // this.vault.myDocIds
     const ids = await this.vault.docs.ids()
-    console.log({ ids })
     const docs = await Promise.all(
       ids.map(id => this.get(id))
     )
