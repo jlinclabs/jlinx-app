@@ -96,6 +96,14 @@ module.exports = class AppAccount {
   get appUserId () { return this._value?.appUserId }
   get signupSecret () { return this._value?.signupSecret }
 
+  async appUser() {
+    if (!this.appUserId) return
+    if (!this._appUser){
+      this._appUser = await this.jlinx.get(this.appUserId)
+      this._appUser._appAccount = this
+    }
+    return this._appUser
+  }
 
   async getSessionRequestResolution(sessionRequestId){
     return this._value?.sessionRequestResolutions[sessionRequestId]

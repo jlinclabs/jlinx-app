@@ -103,6 +103,15 @@ module.exports = class AppUser {
   get appAccountId () { return this._value?.appAccountId }
   get userMetadata () { return this._value?.userMetadata }
 
+  async appAccount() {
+    if (!this.appAccountId) return
+    if (!this._appAccount){
+      this._appAccount = await this.jlinx.get(this.appAccountId)
+      this._appAccount._appUser = this
+    }
+    return this._appAccount
+  }
+
   async getSessionRequests(){
     const entries = await this.ledger.entries()
     const sessionRequests = {}
