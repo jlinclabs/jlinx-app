@@ -195,5 +195,42 @@ module.exports = class AppUser {
     ])
     return sessionRequestId
   }
+
+  async redeemOnetimeLoginLink({ token, ...info }){
+    const appAccount = await this.appAccount()
+    debug('redeemOnetimeLoginLink', { appAccount })
+    const appAccountEntries = await appAccount.ledger.entries()
+    debug('redeemOnetimeLoginLink', { appAccountEntries })
+    const appUserEntries = await this.ledger.entries()
+    debug('redeemOnetimeLoginLink', { appUserEntries })
+
+    let redeemable = false
+    for (const entry of appAccountEntries){
+      if (
+        entry.event === 'GeneratedOnetimeLoginLink' &&
+        entry.token === token
+      ) redeemable = true
+    }
+    if (!redeemable)
+      throw new Error(`invalid onetime login token "${token}"`)
+
+    for (const entry of appUserEntries){
+      if (
+        entry.event === 'RedeemedOnetimeLoginLink' &&
+        entry.token === token
+      ) redeemable = false
+    }
+    if (!redeemable)
+      throw new Error(`onetime login token has already been used token="${token}"`)
+
+    await this.ledger.append([
+      {
+        ...info,
+        event: 'RedeemedOnetimeLoginLink',
+        token,
+      }
+    ])
+    return true
+  }
 }
 
