@@ -23,7 +23,7 @@
   "dependencies": {
     "b4a": "^1.5.3",
     "debug": "^4.3.4",
-    "jlinx-util": "github:jlinclabs/jlinx-util#b9cd3cd0a71352ec4605652d7944111124a589e6",
+    "jlinx-util": "github:jlinclabs/jlinx-util#279f90fdb3b9237522b7d57d22f9c34ae644bcea",
     "jlinx-vault": "github:jlinclabs/jlinx-vault#29776247b9fcedda03678a951e5f7b0dab96d014",
     "node-fetch": "^3.2.4"
   },
