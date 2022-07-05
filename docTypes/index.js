@@ -3,6 +3,7 @@ const Ledger = require('./Ledger')
 const File = require('./File')
 const AppUser = require('./AppUser')
 const AppAccount = require('./AppAccount')
+const AppUserProfile = require('./AppUserProfile')
 
 module.exports = {
   Raw,
@@ -10,4 +11,5 @@ module.exports = {
   File,
   AppUser,
   AppAccount,
+  AppUserProfile,
 }
