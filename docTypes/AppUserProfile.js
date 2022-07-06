@@ -1,17 +1,14 @@
 const Debug = require('debug')
-const { URL } = require('url')
-const { createRandomString } = require('jlinx-util')
 const isPlainObject = require('lodash.isplainobject')
 
-const { postJSON } = require('../util')
 const Ledger = require('./Ledger')
 
 const debug = Debug('jlinx:client:AppUser')
 
 // an app's account for a user
 module.exports = class AppUserProfile {
-
   constructor (doc, jlinx) {
+    debug({ doc, jlinx })
     this.ledger = new Ledger(doc)
     this.jlinx = jlinx
   }
@@ -37,34 +34,34 @@ module.exports = class AppUserProfile {
   get version () { return this.ledger.length }
   get writable () { return this.ledger.writable }
 
-  waitForUpdate(){ return this.ledger.waitForUpdate() }
+  waitForUpdate () { return this.ledger.waitForUpdate() }
 
   async init (opts = {}) {
     await this.ledger.init({
-      docType: this.docType,
+      docType: this.docType
     })
     await this.update()
   }
 
-  async update(){
+  async update () {
     await this.ledger.update()
     if (
       !this._value ||
       this._value.version < this.version
-    ){
+    ) {
       this._value = await this._update()
     }
   }
 
   ready () { return this.update() }
 
-  async _update() {
+  async _update () {
     const entries = await this.ledger.entries()
     const value = {}
     entries.forEach((entry, index) => {
-      if (index === 0){
+      if (index === 0) {
         value._header = entry
-      }else {
+      } else {
         Object.assign(value, entry)
       }
     })
@@ -72,7 +69,7 @@ module.exports = class AppUserProfile {
       ...value,
       version: this.version,
       id: this.id,
-      __entries: entries, // DEBUG
+      __entries: entries // DEBUG
     }
   }
 
@@ -82,19 +79,17 @@ module.exports = class AppUserProfile {
 
   async value () {
     await this.update()
-    return {...this._value} // TODO deep clone
+    return { ...this._value } // TODO deep clone
   }
 
   // set({ key: value })
-  async set(values){
-    if (!isPlainObject(values))
-      throw new Error(`values must be a plain object`)
+  async set (values) {
+    if (!isPlainObject(values)) { throw new Error('values must be a plain object') }
     await this.ledger.append([values])
   }
 
-  async get(key){
+  async get (key) {
     await this.update()
     return this._value[key]
   }
 }
-

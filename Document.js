@@ -38,19 +38,17 @@ module.exports = class Document {
 
   ready () { return this._opening }
 
-
   async header () {
-    if (!this._header)
-      this._header = await this.host.getHeader(this.id)
+    if (!this._header) { this._header = await this.host.getHeader(this.id) }
     return this._header
   }
 
   async update () {
     delete this._header
     const header = await this.header()
-    if (typeof header.length !== 'number'){
-      console.error(`length missing from header`, header)
-      throw new Error(`length missing from header`)
+    if (typeof header.length !== 'number') {
+      console.error('length missing from header', header)
+      throw new Error('length missing from header')
     }
     this.length = header.length || 0
   }
@@ -67,19 +65,19 @@ module.exports = class Document {
     debug('open', this)
   }
 
-  async setHeader(header = {}) {
+  async setHeader (header = {}) {
     await this.update()
-    if (this.length > 0){
+    if (this.length > 0) {
       throw new Error(
-        `cannot set header for non-empty document. ` +
-        `id="${doc.id}" ` +
-        `length=${doc.length}`
+        'cannot set header for non-empty document. ' +
+        `id="${this.doc.id}" ` +
+        `length=${this.doc.length}`
       )
     }
     header = JSON.stringify({
       contentType: 'application/octet-stream',
       ...header,
-      host: this.host.url,
+      host: this.host.url
     })
     this._header = JSON.parse(header)
     await this.append([b4a.from(header)])

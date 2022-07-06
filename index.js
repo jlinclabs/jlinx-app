@@ -2,7 +2,7 @@ const Debug = require('debug')
 
 const {
   keyToString,
-  keyToBuffer,
+  keyToBuffer
 } = require('jlinx-util')
 const Vault = require('jlinx-vault')
 
@@ -14,7 +14,6 @@ const DOC_TYPES = require('./docTypes')
 const debug = Debug('jlinx:client')
 
 module.exports = class JlinxClient {
-
   constructor (opts) {
     debug(opts)
 
@@ -48,7 +47,7 @@ module.exports = class JlinxClient {
     debug('create', opts)
     const { docType = 'Raw', ...initOpts } = opts
     const TypeClass = this.docTypes[docType]
-    if (!TypeClass){
+    if (!TypeClass) {
       throw new Error(`invalid doc type "${docType}"`)
     }
     await this.ready()
@@ -59,7 +58,7 @@ module.exports = class JlinxClient {
     )
     const id = await this.host.create({
       ownerSigningKey,
-      ownerSigningKeyProof,
+      ownerSigningKeyProof
     })
     await this.vault.docs.put(id, {
       ownerSigningKey: keyToString(ownerSigningKey),
@@ -93,9 +92,9 @@ module.exports = class JlinxClient {
       ownerSigningKeys
     })
     const header = await doc.header()
-    debug('get', {doc, header})
+    debug('get', { doc, header })
 
-    if (header && header.docType && this.docTypes[header.docType]){
+    if (header && header.docType && this.docTypes[header.docType]) {
       const TypeClass = this.docTypes[header.docType]
       doc = new TypeClass(doc, this)
     }
@@ -114,14 +113,13 @@ module.exports = class JlinxClient {
 
   // METHODS BELOW HERE SHOULD BE MOVED TO PLUGINS
 
-
   async createAppUser (opts) {
     const appUser = await this.create({
-      docType: 'AppUser',
+      docType: 'AppUser'
     })
     debug('createAppUser created', appUser)
     await appUser.offerAccount({
-      followupUrl: opts.followupUrl,
+      followupUrl: opts.followupUrl
     })
     debug('createAppUser offered account', appUser)
     return appUser
@@ -140,14 +138,14 @@ module.exports = class JlinxClient {
     const appAccount = await this.create({
       docType: 'AppAccount',
       appUserId,
-      signupSecret,
+      signupSecret
     })
 
     const appUserUpdated = appUser.waitForUpdate() // await below
 
     // post AppAccount.id to followupUrl
     const response = await postJSON(followupUrl, {
-      appAccountId: appAccount.id,
+      appAccountId: appAccount.id
     })
     debug({ response })
 

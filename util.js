@@ -2,7 +2,6 @@ const Debug = require('debug')
 
 const debug = Debug('jlinx:fetch')
 
-
 async function fetch (url, options = {}) {
   const { default: fetch } = await import('node-fetch')
   debug('fetch req', { url, options })
@@ -24,7 +23,7 @@ async function fetch (url, options = {}) {
   return response
 }
 
-async function postJSON(url, body){
+async function postJSON (url, body) {
   const response = await fetch(url, {
     method: 'post',
     headers: {
@@ -38,5 +37,5 @@ async function postJSON(url, body){
 
 module.exports = {
   fetch,
-  postJSON,
+  postJSON
 }

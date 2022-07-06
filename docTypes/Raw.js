@@ -1,11 +1,9 @@
-const Debug = require('debug')
-const b4a = require('b4a')
+// const Debug = require('debug')
+// const b4a = require('b4a')
 
-const debug = Debug('jlinx:client:Raw')
+// const debug = Debug('jlinx:client:Raw')
 
 module.exports = class Raw {
-
-
   constructor (doc) {
     this.doc = doc
   }
@@ -27,6 +25,5 @@ module.exports = class Raw {
       indent + ')'
   }
 
-  ready() { return this.doc.ready() }
-
+  ready () { return this.doc.ready() }
 }

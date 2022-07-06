@@ -82,7 +82,7 @@ module.exports = class RemoteHost {
       }
     })
     const header = await response.json()
-    debug({id, header})
+    debug({ id, header })
     return header
   }
 

@@ -11,5 +11,5 @@ module.exports = {
   File,
   AppUser,
   AppAccount,
-  AppUserProfile,
+  AppUserProfile
 }

@@ -4,7 +4,6 @@ const b4a = require('b4a')
 const debug = Debug('jlinx:client:Ledger')
 
 module.exports = class Ledger {
-
   constructor (doc) {
     this.doc = doc
     this._cache = []
@@ -28,8 +27,7 @@ module.exports = class Ledger {
   }
 
   async header () {
-    if (!this._header)
-      this._header = await this.doc.header()
+    if (!this._header) { this._header = await this.doc.header() }
     return this._header
   }
 
@@ -51,10 +49,10 @@ module.exports = class Ledger {
   async init (header = {}) {
     debug('Ledger INIT', this)
     await this.update()
-    if (this.doc.length > 0){
+    if (this.doc.length > 0) {
       throw new Error(
         `cannot initialize ${this.docType} ` +
-        `in non-empty document. ` +
+        'in non-empty document. ' +
         `id="${this.doc.id}" ` +
         `length=${this.doc.length}`
       )
@@ -79,7 +77,7 @@ module.exports = class Ledger {
     return entry
   }
 
-  async append(events){
+  async append (events) {
     await this.doc.append(
       events.map(event =>
         this.encode(event)
@@ -87,7 +85,7 @@ module.exports = class Ledger {
     )
   }
 
-  waitForUpdate(){ return this.doc.waitForUpdate() }
+  waitForUpdate () { return this.doc.waitForUpdate() }
 
   async entries () {
     // debug('entries', this.id, { length: this.length })
@@ -103,8 +101,8 @@ module.exports = class Ledger {
     debug('GOT entries', {
       id, length, entries
     })
-    if (entries.length !== length){
-      throw new Error(`Ledger fucked up`)
+    if (entries.length !== length) {
+      throw new Error('Ledger fucked up')
     }
     return entries
   }
@@ -112,10 +110,4 @@ module.exports = class Ledger {
   // async value(){
   //   return await this.all()
   // }
-
-}
-
-
-function parseJson(json){
-  return JSON.parse(json)
 }

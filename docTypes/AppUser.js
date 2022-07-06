@@ -9,7 +9,6 @@ const debug = Debug('jlinx:client:AppUser')
 
 // an app's account for a user
 module.exports = class AppUser {
-
   constructor (doc, jlinx) {
     this.ledger = new Ledger(doc)
     this.jlinx = jlinx
@@ -36,58 +35,58 @@ module.exports = class AppUser {
   get version () { return this.ledger.length }
   get writable () { return this.ledger.writable }
 
-  waitForUpdate(){ return this.ledger.waitForUpdate() }
+  waitForUpdate () { return this.ledger.waitForUpdate() }
 
   async init (opts = {}) {
     await this.ledger.init({
-      docType: this.docType,
+      docType: this.docType
     })
     await this.update()
   }
 
-  async update(){
+  async update () {
     await this.ledger.update()
     if (
       !this._value ||
       this._value.version < this.version
-    ){
+    ) {
       this._value = await this._update()
     }
   }
 
   ready () { return this.update() }
 
-  async _update() {
+  async _update () {
     const entries = await this.ledger.entries()
     const value = {
       version: this.version,
       id: this.id,
-      state: 'init',
+      state: 'init'
     }
 
     // consider ensuring each
 
     entries.forEach((entry, index) => {
-      if (index === 0){
+      if (index === 0) {
         value._header = entry
-      }else if (entry.event === 'AccountOffered'){
+      } else if (entry.event === 'AccountOffered') {
         value.state = 'offered'
         value.followupUrl = entry.followupUrl
         value.signupSecret = entry.signupSecret
-      }else if (entry.event === 'AccountOpened'){
+      } else if (entry.event === 'AccountOpened') {
         value.state = 'open'
         value.appAccountId = entry.appAccountId
         value.userMetadata = entry.userMetadata
       // }else if (entry.event === 'AccountOfferRescinded'){
       //   value.state = 'closed'
-      }else if (entry.event === 'AccountClosed'){
+      } else if (entry.event === 'AccountClosed') {
         value.state = 'closed'
-      }else {
+      } else {
         value._ignoredEntries = value._ignoredEntries || []
         value._ignoredEntries.push(entries)
       }
     })
-    if (value.followupUrl){
+    if (value.followupUrl) {
       value.host = new URL(value.followupUrl).host
     }
     value.__entries = entries
@@ -99,24 +98,24 @@ module.exports = class AppUser {
   get host () { return this._value?.host }
   get followupUrl () { return this._value?.followupUrl }
   get signupSecret () { return this._value?.signupSecret }
-  get isOffered (){ return this._value?.state === 'offered' }
+  get isOffered () { return this._value?.state === 'offered' }
   get appAccountId () { return this._value?.appAccountId }
   get userMetadata () { return this._value?.userMetadata }
 
-  async appAccount() {
+  async appAccount () {
     if (!this.appAccountId) return
-    if (!this._appAccount){
+    if (!this._appAccount) {
       this._appAccount = await this.jlinx.get(this.appAccountId)
       this._appAccount._appUser = this
     }
     return this._appAccount
   }
 
-  async getSessionRequests(){
+  async getSessionRequests () {
     const entries = await this.ledger.entries()
     const sessionRequests = {}
-    for (const entry of entries){
-      if (entry.event === 'SessionRequested'){
+    for (const entry of entries) {
+      if (entry.event === 'SessionRequested') {
         sessionRequests[entry.sessionRequestId] = entry
       }
       // if (entry.event === 'Session??????'){
@@ -126,7 +125,7 @@ module.exports = class AppUser {
     return Object.values(sessionRequests)
   }
 
-  async sessionRequest(id){
+  async sessionRequest (id) {
     const sessionRequests = await this.getSessionRequests()
     return sessionRequests.find(sr => sr.sessionRequestId === id)
   }
@@ -135,10 +134,10 @@ module.exports = class AppUser {
 
   async offerAccount (opts = {}) {
     const {
-      followupUrl,
+      followupUrl
     } = opts
-    if (!followupUrl){
-      throw new Error(`AppUser#init requires followupUrl`)
+    if (!followupUrl) {
+      throw new Error('AppUser#init requires followupUrl')
     }
     await this.ledger.append([
       {
@@ -152,18 +151,18 @@ module.exports = class AppUser {
 
   // TODO consolder moving this to AppAccount??
   async acceptOffer () {
-    if (!this.isOffered){
-      throw new Error(`failed to accept app user offer`)
+    if (!this.isOffered) {
+      throw new Error('failed to accept app user offer')
     }
     const appAccount = await this.jlinx.create({
-      docType: 'AppAccount',
+      docType: 'AppAccount'
     })
     await appAccount.acceptAppUserOffer(this)
 
     const nextUpdate = this.waitForUpdate() // await below
 
     const response = await postJSON(this.followupUrl, {
-      appAccountId: appAccount.id,
+      appAccountId: appAccount.id
     })
     debug({ response })
 
@@ -174,7 +173,7 @@ module.exports = class AppUser {
     return appAccount
   }
 
-  async openAccount({ appAccountId, userMetadata }){
+  async openAccount ({ appAccountId, userMetadata }) {
     await this.ledger.append([
       {
         event: 'AccountOpened',
@@ -184,19 +183,19 @@ module.exports = class AppUser {
     ])
   }
 
-  async requestSession({ sourceInfo }){
+  async requestSession ({ sourceInfo }) {
     const sessionRequestId = createRandomString()
     await this.ledger.append([
       {
         event: 'SessionRequested',
         sessionRequestId,
-        sourceInfo,
+        sourceInfo
       }
     ])
     return sessionRequestId
   }
 
-  async redeemOnetimeLoginLink({ token, ...info }){
+  async redeemOnetimeLoginLink ({ token, ...info }) {
     const appAccount = await this.appAccount()
     debug('redeemOnetimeLoginLink', { appAccount })
     const appAccountEntries = await appAccount.ledger.entries()
@@ -205,32 +204,29 @@ module.exports = class AppUser {
     debug('redeemOnetimeLoginLink', { appUserEntries })
 
     let redeemable = false
-    for (const entry of appAccountEntries){
+    for (const entry of appAccountEntries) {
       if (
         entry.event === 'GeneratedOnetimeLoginLink' &&
         entry.token === token
       ) redeemable = true
     }
-    if (!redeemable)
-      throw new Error(`invalid onetime login token "${token}"`)
+    if (!redeemable) { throw new Error(`invalid onetime login token "${token}"`) }
 
-    for (const entry of appUserEntries){
+    for (const entry of appUserEntries) {
       if (
         entry.event === 'RedeemedOnetimeLoginLink' &&
         entry.token === token
       ) redeemable = false
     }
-    if (!redeemable)
-      throw new Error(`onetime login token has already been used token="${token}"`)
+    if (!redeemable) { throw new Error(`onetime login token has already been used token="${token}"`) }
 
     await this.ledger.append([
       {
         ...info,
         event: 'RedeemedOnetimeLoginLink',
-        token,
+        token
       }
     ])
     return true
   }
 }
-

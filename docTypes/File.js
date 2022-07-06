@@ -1,10 +1,9 @@
-const Debug = require('debug')
-const b4a = require('b4a')
+// const Debug = require('debug')
+// const b4a = require('b4a')
 
-const debug = Debug('jlinx:client:File')
+// const debug = Debug('jlinx:client:File')
 
 module.exports = class File {
-
   constructor (doc) {
     this.doc = doc
   }
@@ -25,5 +24,4 @@ module.exports = class File {
       // indent + '  contentType: ' + opts.stylize(this.contentType, 'string') + '\n' +
       indent + ')'
   }
-
 }
