@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "standard",
-    "test": "standard && tape test/*.js"
+    "test": "standard && tape test/**/*.js"
   },
   "repository": {
     "type": "git",
