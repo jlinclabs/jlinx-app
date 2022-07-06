@@ -1,13 +1,11 @@
-const b4a = require('b4a')
 const { test } = require('../helpers/test.js')
-const { validateSigningKeyPair } = require('jlinx-util')
 
 test('Ledger', async (t, createClient) => {
   const client = await createClient()
   const ledger1 = await client.create({
     docType: 'Ledger',
     extra: 'stuff',
-    more: 'things',
+    more: 'things'
   })
   console.log({ ledger1 })
   t.same(ledger1.length, 1)
@@ -17,27 +15,27 @@ test('Ledger', async (t, createClient) => {
     docType: 'Ledger',
     host: client.host.url,
     extra: 'stuff',
-    more: 'things',
+    more: 'things'
   }
   t.same(
     await ledger1.header(),
-    expectedHeader,
+    expectedHeader
   )
   t.same(
     await ledger1.get(0),
-    expectedHeader,
+    expectedHeader
   )
 
   await ledger1.append([
-    {event: 'one', index: 1},
-    {event: 'two', index: 2},
+    { event: 'one', index: 1 },
+    { event: 'two', index: 2 }
   ])
 
   t.same(ledger1.length, 3)
 
   t.same(await ledger1.get(0), expectedHeader)
-  t.same(await ledger1.get(1), {event: 'one', index: 1})
-  t.same(await ledger1.get(2), {event: 'two', index: 2})
+  t.same(await ledger1.get(1), { event: 'one', index: 1 })
+  t.same(await ledger1.get(2), { event: 'two', index: 2 })
 
   t.end()
 })
