@@ -1,9 +1,45 @@
 const b4a = require('b4a')
-const { test } = require('./helpers/index.js')
+const { test } = require('../helpers/test.js')
 const { validateSigningKeyPair } = require('jlinx-util')
 
-test('Ledger', async (t, createNode) => {
+test('Ledger', async (t, createClient) => {
+  const client = await createClient()
+  const ledger1 = await client.create({
+    docType: 'Ledger',
+    extra: 'stuff',
+    more: 'things',
+  })
+  console.log({ ledger1 })
+  t.same(ledger1.length, 1)
+  t.same(ledger1.writable, true)
+  const expectedHeader = {
+    contentType: 'application/json',
+    docType: 'Ledger',
+    host: client.host.url,
+    extra: 'stuff',
+    more: 'things',
+  }
+  t.same(
+    await ledger1.header(),
+    expectedHeader,
+  )
+  t.same(
+    await ledger1.get(0),
+    expectedHeader,
+  )
 
+  await ledger1.append([
+    {event: 'one', index: 1},
+    {event: 'two', index: 2},
+  ])
+
+  t.same(ledger1.length, 3)
+
+  t.same(await ledger1.get(0), expectedHeader)
+  t.same(await ledger1.get(1), {event: 'one', index: 1})
+  t.same(await ledger1.get(2), {event: 'two', index: 2})
+
+  t.end()
 })
 
 // test('creating a document', async (t, createNode) => {

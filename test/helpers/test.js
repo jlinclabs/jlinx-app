@@ -1,3 +1,4 @@
+const Debug = require('debug')
 const tape = require('tape')
 const tmp = require('tmp-promise')
 const fs = require('node:fs/promises')
@@ -9,7 +10,9 @@ const createJlinxHostHttpServer = require('jlinx-host/http-server')
 
 const JlinxClient = require('../../index.js')
 
-module.exports.test = function(name, fn, _tape = tape) {
+const debug = Debug('test')
+
+module.exports.test = function (name, fn, _tape = tape) {
   return _tape(name, run)
   async function run (t) {
     const bootstrappers = []
@@ -18,12 +21,14 @@ module.exports.test = function(name, fn, _tape = tape) {
     while (bootstrappers.length < 3) {
       bootstrappers.push(new HyperDHT({ ephemeral: true, bootstrap: [] }))
     }
+    debug(`started ${bootstrappers.length} bootstrappers`)
 
     const bootstrap = []
     for (const node of bootstrappers) {
       await node.ready()
       bootstrap.push({ host: '127.0.0.1', port: node.address().port })
     }
+    debug({ bootstrap })
 
     while (nodes.length < 3) {
       const node = new HyperDHT({ ephemeral: false, bootstrap })
@@ -45,10 +50,11 @@ module.exports.test = function(name, fn, _tape = tape) {
       const jlinxHost = new JlinxHost({
         storagePath: await newTmpDir(),
         bootstrap,
-        url: `http://example.com`,
+        url: 'http://example.com',
         keyPair: createSigningKeyPair(),
         vaultKey: Vault.generateKey()
       })
+      debug('created jlinxHost', jlinxHost)
       jlinxHosts.push(jlinxHost)
       await jlinxHost.ready()
       const httpServer = createJlinxHostHttpServer(jlinxHost)
@@ -56,16 +62,19 @@ module.exports.test = function(name, fn, _tape = tape) {
       jlinxHostHttpServers.push(httpServer)
       return jlinxHost
     }
-    while (jlinxHosts.length < 2) createHost()
+    while (jlinxHosts.length < 2) await createHost()
+    debug(`started ${jlinxHosts.length} jlinx hosts`)
 
     const jlinxClients = []
     const createClient = async () => {
       const jlinxClient = new JlinxClient({
         vaultPath: await newTmpDir(),
-        hostUrl: jlinxHost.url,
-        vaultKey: Vault.generateKey(),
+        hostUrl: jlinxHostHttpServers[0].url,
+        vaultKey: Vault.generateKey()
       })
+      debug('created jlinxClient', jlinxClient)
       jlinxClients.push(jlinxClient)
+      await jlinxClient.ready()
       return jlinxClient
     }
 

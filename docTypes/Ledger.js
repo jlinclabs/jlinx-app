@@ -5,6 +5,7 @@ const debug = Debug('jlinx:client:Ledger')
 
 module.exports = class Ledger {
   constructor (doc) {
+    debug({ doc })
     this.doc = doc
     this._cache = []
   }
