@@ -55,8 +55,8 @@ module.exports = class Ledger {
       throw new Error(
         `cannot initialize ${this.docType} ` +
         `in non-empty document. ` +
-        `id="${doc.id}" ` +
-        `length=${doc.length}`
+        `id="${this.doc.id}" ` +
+        `length=${this.doc.length}`
       )
     }
     await this.doc.setHeader({
