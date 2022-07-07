@@ -66,10 +66,13 @@ module.exports.test = function (name, fn, _tape = tape) {
     debug(`started ${jlinxHosts.length} jlinx hosts`)
 
     const jlinxClients = []
-    const createClient = async () => {
+
+    const createClient = async (
+      hostUrl = jlinxHostHttpServers[0].url
+    ) => {
       const jlinxClient = new JlinxClient({
         vaultPath: await newTmpDir(),
-        hostUrl: jlinxHostHttpServers[0].url,
+        hostUrl,
         vaultKey: Vault.generateKey()
       })
       debug('created jlinxClient', jlinxClient)
@@ -78,6 +81,7 @@ module.exports.test = function (name, fn, _tape = tape) {
       return jlinxClient
     }
 
+    t.jlinxHosts = jlinxHostHttpServers
     await fn(t, createClient)
 
     destroy(jlinxClients)
