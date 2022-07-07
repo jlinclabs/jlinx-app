@@ -5,13 +5,14 @@ const {
   publicKeyToDid,
 } = require('../Identifiers')
 
-test('did <-> publicKey', async (t, createClient) => {
+test.only('did <-> publicKey', async (t, createClient) => {
   const client = await createClient()
 
   const { did } = await client.identifiers.create()
   console.log({ did })
 
   const publicKey = didToPublicKey(did)
+  console.log({ did, publicKey })
   t.equal(did, publicKeyToDid(publicKey))
   t.equal(publicKey, publicKeyToDid(did))
 
