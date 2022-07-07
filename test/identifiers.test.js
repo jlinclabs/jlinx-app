@@ -14,7 +14,7 @@ test.only('did <-> publicKey', async (t, createClient) => {
   const publicKey = didToPublicKey(did)
   console.log({ did, publicKey })
   t.equal(did, publicKeyToDid(publicKey))
-  t.equal(publicKey, publicKeyToDid(did))
+  t.equal(publicKey,  didToPublicKey(did))
 
 })
 

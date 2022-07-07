@@ -15,17 +15,6 @@ module.exports = class Identifiers {
   async create(){
     const signingKeyPair = await this.keys.createSigningKeyPair()
     debug( 'CREATE', {signingKeyPair} )
-
-    const { publicKey } = signingKeyPair
-    console.log('\n\n\n???', {
-      publicKey,
-      publicKeyAsString: keyToString(publicKey),
-      publicKeyFromString: keyToBuffer(keyToString(publicKey)),
-      publicKeyB58: base58.encode(publicKey),
-      publicKeyFromB58: b4a.from(base58.decode(base58.encode(publicKey))),
-    })
-
-
     return new Identifier(signingKeyPair)
     // const didDocument = signingKeyToDidDocument(keyBox.publicKey)
     // console.log({ didDocument })
@@ -77,26 +66,36 @@ Object.assign(module.exports, {
   signingKeyToDidDocument,
 })
 
+
+
+// const { publicKey } = signingKeyPair
+// console.log('\n\n\n???', {
+//   publicKey,
+//   publicKeyAsString: keyToString(publicKey),
+//   publicKeyFromString: keyToBuffer(keyToString(publicKey)),
+//   publicKeyB58: base58.encode(publicKey),
+//   publicKeyFromB58: b4a.from(base58.decode(base58.encode(publicKey))),
+// })
+
+const DID_PREFIX = 'did:key:z6mk'
 function didToPublicKeyBuffer(did){
-  const publicKey = did.split('did:key:')[1]
-  return b4a.from(base58.decode(publicKey))
+  const publicKey = did.split(DID_PREFIX)[1]
+  const buffer = b4a.from(base58.decode(publicKey))
+  return buffer
 }
 
 function didToPublicKey(did){
-  console.log('\n\n\ndidToPublicKey', { did })
+  console.trace('didToPublicKey', { did })
   const pkb = didToPublicKeyBuffer(did)
-  const publicKeyAsBuffer = keyToBuffer(pkb)
   const publicKeyAsString = keyToString(pkb)
-  console.log('didToPublicKey', { did, pkb, publicKeyAsBuffer, publicKeyAsString })
   return publicKeyAsString
 }
 
 function publicKeyToDid(publicKey){
   console.log('publicKeyToDid', {publicKey})
-  // if (!Buffer.isBuffer(publicKey)) publicKey = base58.decode(publicKey)
-  const base68EncodedPK = base58.encode(publicKey)
-  const publicKeyMultibase = `z6mk${base68EncodedPK}`
-  return `did:key:${publicKeyMultibase}`
+  const base58encoded = base58.encode(keyToBuffer(publicKey))
+  console.log('publicKeyToDid', {base58encoded})
+  return `${DID_PREFIX}${base58encoded}`
 }
 
 function signingKeyToDidDocument(publicKey){
