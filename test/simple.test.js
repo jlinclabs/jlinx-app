@@ -1,11 +1,6 @@
 const b4a = require('b4a')
 const { test } = require('./helpers/test.js')
 
-// const {
-//   didToPublicKey,
-//   publicKeyToDid
-// } = require('../Identifiers')
-
 test('sync same host', async (t, createClient) => {
   const client = await createClient()
   const doc1 = await client.create()
@@ -23,10 +18,6 @@ test('sync same host', async (t, createClient) => {
   t.equal(doc2.host, client.host)
   t.ok(doc2.ownerSigningKeys)
 
-  console.log({
-    doc1, doc2
-  })
-
   await doc1.append([
     b4a.from('block one'),
     b4a.from('block two'),
@@ -37,10 +28,6 @@ test('sync same host', async (t, createClient) => {
 
   await doc2.update()
   t.equal(doc2.length, 2)
-
-  console.log({
-    doc1, doc2
-  })
 
   await doc2.append([
     b4a.from('block three'),
@@ -73,7 +60,7 @@ test('sync same host', async (t, createClient) => {
   t.end()
 })
 
-test('sync diff host', async (t, createClient) => {
+test.only('sync diff host', async (t, createClient) => {
   const client1 = await createClient(t.jlinxHosts[0].url)
   const client2 = await createClient(t.jlinxHosts[1].url)
   const doc1 = await client1.create()
@@ -88,11 +75,7 @@ test('sync diff host', async (t, createClient) => {
   t.equal(doc2.writable, false)
   t.equal(doc2.host, client2.host)
   t.ok(!doc2.ownerSigningKeys)
-  await sharedSyncTest(t, doc1, doc2)
-  t.end()
-})
 
-async function sharedSyncTest(t, doc1, doc2){
   t.equal(doc1.id, doc2.id)
   t.equal(doc1.length, doc2.length)
 
@@ -104,17 +87,18 @@ async function sharedSyncTest(t, doc1, doc2){
   t.equal(doc1.length, 2)
   t.equal(doc2.length, 0)
 
+  console.log('\n\n\n\n\n?? WTF PANDA ???\n\n\n')
   await doc2.update()
   t.equal(doc2.length, 2)
 
-  await doc2.append([
+  await doc1.append([
     b4a.from('block three'),
     b4a.from('block four'),
   ])
-  t.equal(doc1.length, 2)
-  t.equal(doc2.length, 4)
-  await doc1.update()
   t.equal(doc1.length, 4)
+  t.equal(doc2.length, 2)
+  await doc2.update()
+  t.equal(doc2.length, 4)
 
   for (let doc of [doc1, doc2]){
     t.deepEqual(
@@ -134,4 +118,6 @@ async function sharedSyncTest(t, doc1, doc2){
       'block four'
     )
   }
-}
+
+  t.end()
+})
