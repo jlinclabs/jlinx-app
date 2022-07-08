@@ -1,7 +1,9 @@
 const Debug = require('debug')
 const b4a = require('b4a')
 const {
-  base58, keyToString, keyToBuffer
+  base58,
+  // keyToString,
+  keyToBuffer
 } = require('jlinx-util')
 
 const debug = Debug('jlinx:client:identifiers')
@@ -65,7 +67,7 @@ function didToPublicKey (did) {
   if (!matches) {
     throw new Error(`invalid did "${did}"`)
   }
-  const [_, method, id] = matches
+  const [, method, id] = matches
   if (method === 'key') {
     if (!id.startsWith('z6mk')) {
       throw new Error(`invalid key encoding format "${did}"`)

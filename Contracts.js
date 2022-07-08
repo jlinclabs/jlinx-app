@@ -10,6 +10,7 @@ module.exports = class Contracts {
     const doc = await this.jlinx.create({
       docType: 'Contract'
     })
+    return new Contract(doc)
   }
 
   async sign () {

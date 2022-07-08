@@ -4,11 +4,11 @@ const { test } = require('./helpers/test.js')
 test.only('smoke test', async (t, createClient) => {
   const [client1, client2] = await Promise.all([
     await createClient(),
-    await createClient(),
+    await createClient()
   ])
   await Promise.all([
     await client1.connected(),
-    await client2.connected(),
+    await client2.connected()
   ])
 })
 

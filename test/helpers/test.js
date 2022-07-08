@@ -28,7 +28,7 @@ module.exports.test = function (name, fn, _tape = tape) {
       await node.ready()
       bootstrap.push({ host: '127.0.0.1', port: node.address().port })
     }
-    debug(`bootstrappers ready`, bootstrappers)
+    debug('bootstrappers ready', bootstrappers)
     debug({ bootstrap })
 
     while (nodes.length < 3) {
@@ -36,8 +36,7 @@ module.exports.test = function (name, fn, _tape = tape) {
       await node.ready()
       nodes.push(node)
     }
-    debug(`DHT Nodes ready`, nodes)
-
+    debug('DHT Nodes ready', nodes)
 
     const tmpDirs = []
     const newTmpDir = async () => {
@@ -75,7 +74,7 @@ module.exports.test = function (name, fn, _tape = tape) {
     await Promise.all(
       jlinxHosts.map(jlinxHost => jlinxHost.connected())
     )
-    debug(`jlinx hosts connected`)
+    debug('jlinx hosts connected')
 
     const jlinxClients = []
 

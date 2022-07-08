@@ -6,7 +6,6 @@ const {
 } = require('jlinx-util')
 const Vault = require('jlinx-vault')
 
-const { postJSON } = require('./util')
 const RemoteHost = require('./RemoteHost')
 const Document = require('./Document')
 const Identifiers = require('./Identifiers')
@@ -45,13 +44,8 @@ module.exports = class JlinxClient {
     await this.host.destroy()
   }
 
-  async create (opts = {}) {
-    debug('create', opts)
-    const { docType = 'Raw', ...initOpts } = opts
-    // const TypeClass = this.docTypes[docType]
-    // if (!TypeClass) {
-    //   throw new Error(`invalid doc type "${docType}"`)
-    // }
+  async create () {
+    debug('create')
     await this.ready()
     const ownerSigningKeys = await this.vault.keys.createSigningKeyPair()
     const ownerSigningKey = ownerSigningKeys.publicKey
