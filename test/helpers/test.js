@@ -65,14 +65,14 @@ module.exports.test = function (name, fn, _tape = tape) {
     }
     while (jlinxHosts.length < 2) await createHost()
     debug(`started ${jlinxHosts.length} jlinx hosts`)
-    console.log('!!!!jlinxHosts', [
-      jlinxHosts[0].node,
-      jlinxHosts[1].node,
-    ])
     await Promise.all(
       jlinxHosts.map(jlinxHost => jlinxHost.connected())
     )
+    if (
+      jlinxHosts.some(host => host.node.peers.size === 0)
+    ){ throw new Error(`hosts failed to connect`) }
     debug('jlinx hosts connected')
+
 
     const jlinxHostHttpServers = []
     for (const jlinxHost of jlinxHosts){
@@ -111,13 +111,7 @@ module.exports.test = function (name, fn, _tape = tape) {
       destroy(nodes)
     })
 
-    let error
-    try {
-      await fn(t, createClient)
-    } catch (e) {
-      error = e
-    }
-    t.end(error)
+    await fn(t, createClient)
   }
 }
 exports.test.only = (name, fn) => exports.test(name, fn, tape.only)

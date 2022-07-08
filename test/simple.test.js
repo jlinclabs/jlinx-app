@@ -73,11 +73,9 @@ test('sync same host', async (t, createClient) => {
   t.end()
 })
 
-test.only('sync diff host', async (t, createClient) => {
-  await Promise.all(
-    t.jlinxHosts.map(host => host.connected())
-  )
-  console.log('HOST NODES CONNECTED?', t.jlinxHosts)
+test('sync diff host', async (t, createClient) => {
+  t.ok(t.jlinxHosts[1].node.peers.size > 0)
+  t.ok(t.jlinxHosts[0].node.peers.size > 0)
   const client1 = await createClient(t.jlinxHostHttpServers[0].url)
   const client2 = await createClient(t.jlinxHostHttpServers[1].url)
   const doc1 = await client1.create()
@@ -104,7 +102,6 @@ test.only('sync diff host', async (t, createClient) => {
   t.equal(doc1.length, 2)
   t.equal(doc2.length, 0)
 
-  console.log('\n\n\n\n\n\n\n\nHERE???')
   await doc2.update()
   t.equal(doc2.length, 2)
 
