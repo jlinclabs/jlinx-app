@@ -28,7 +28,7 @@ module.exports.test = function (name, fn, _tape = tape) {
       await node.ready()
       bootstrap.push({ host: '127.0.0.1', port: node.address().port })
     }
-    debug('bootstrappers ready', bootstrappers)
+    debug('bootstrappers ready')
     debug({ bootstrap })
 
     while (nodes.length < 3) {
@@ -36,7 +36,7 @@ module.exports.test = function (name, fn, _tape = tape) {
       await node.ready()
       nodes.push(node)
     }
-    debug('DHT Nodes ready', nodes)
+    debug('DHT Nodes ready')
 
     const tmpDirs = []
     const newTmpDir = async () => {
@@ -47,7 +47,6 @@ module.exports.test = function (name, fn, _tape = tape) {
     }
 
     const jlinxHosts = []
-    const jlinxHostHttpServers = []
     const createHost = async () => {
       const jlinxHost = new JlinxHost({
         storagePath: await newTmpDir(),
@@ -60,24 +59,30 @@ module.exports.test = function (name, fn, _tape = tape) {
       jlinxHosts.push(jlinxHost)
       // await jlinxHost.ready()
       // debug('jlinxHost ready', jlinxHost)
-      const httpServer = createJlinxHostHttpServer(jlinxHost)
-      await httpServer.start()
-      jlinxHostHttpServers.push(httpServer)
+
       return jlinxHost
     }
     while (jlinxHosts.length < 2) await createHost()
     debug(`started ${jlinxHosts.length} jlinx hosts`)
-    // console.log('!!!!jlinxHosts', [
-    //   jlinxHosts[0].node.swarm,
-    //   jlinxHosts[1].node.swarm,
-    // ])
+    console.log('!!!!jlinxHosts', [
+      jlinxHosts[0].node.swarm.dht.bootstrapNodes,
+      jlinxHosts[1].node.swarm.dht.bootstrapNodes,
+    ])
     await Promise.all(
       jlinxHosts.map(jlinxHost => jlinxHost.connected())
     )
     debug('jlinx hosts connected')
 
-    const jlinxClients = []
+    const jlinxHostHttpServers = []
+    for (const jlinxHost of jlinxHosts){
+      const httpServer = createJlinxHostHttpServer(jlinxHost)
+      jlinxHostHttpServers.push(httpServer)
+      await httpServer.start()
+    }
+    debug('jlinx host http servers up')
 
+
+    const jlinxClients = []
     const createClient = async (
       hostUrl = jlinxHostHttpServers[0].url
     ) => {
