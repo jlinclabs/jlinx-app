@@ -12,20 +12,17 @@ module.exports = class Identifiers {
     this.keys = jlinx.vault.keyStore('identifiers')
   }
 
-  async create(){
+  async createDidKey(){
     const signingKeyPair = await this.keys.createSigningKeyPair()
-    debug('create', {
-      publicKey: signingKeyPair.publicKey,
-      did: publicKeyToDid(signingKeyPair.publicKey),
-      pkfd: didToPublicKey(publicKeyToDid(signingKeyPair.publicKey)),
-    })
-    // debug('create', { publicKey: keyToString(signingKeyPair.publicKey) })
     return new Identifier(signingKeyPair)
+  }
+
+  async createDidDocument(){
   }
 
   async get(did){
     debug('get', { did })
-    const publicKey = keyToBuffer(didToPublicKey(did))
+    const publicKey = didToPublicKey(did)
     debug('get', { publicKey })
     const signingKeyPair = await this.keys.get(publicKey)
     debug('get', { signingKeyPair })
@@ -39,7 +36,6 @@ class Identifier {
   constructor(signingKeyPair){
     this.signingKeyPair = signingKeyPair
     this.publicKey = signingKeyPair.publicKey
-    // this.did = this.didDocument.id
     this.did = publicKeyToDid(this.publicKey)
   }
 
@@ -66,27 +62,30 @@ Object.assign(module.exports, {
 })
 
 const DID_PREFIX = 'did:key:z6mk'
-function didToPublicKeyBuffer(did){
-  const publicKey = did.split(DID_PREFIX)[1]
-  return b4a.from(base58.decode(publicKey))
+function didToPublicKey(did){
+  let matches = did.match(/^did:([^:]+):(.+)$/)
+  console.log({ matches })
+  if (!matches){
+    throw new Error(`invalid did "${did}"`)
+  }
+  const [_, method, id] = matches
+  if (method === 'key'){
+    if (!id.startsWith('z6mk')){
+      throw new Error(`invalid key encoding format "${did}"`)
+    }
+    return b4a.from(base58.decode(id.slice(4)))
+  }
+  if (method === 'jlinx'){
+
+  }
 }
 
-function didToPublicKey(did){
-  return didToPublicKeyBuffer(did)
-  return keyToString(didToPublicKeyBuffer(did))
-}
 
 function publicKeyToDid(publicKey){
   return `${DID_PREFIX}${base58.encode(keyToBuffer(publicKey))}`
 }
 
 function signingKeyToDidDocument(publicKey){
-  console.log('signingKeyToDidDocument', publicKey)
-  // if (!Buffer.isBuffer(publicKey)) publicKey = b64.decode(key)
-  // console.log('signingKeyToDidDocument', publicKey)
-  // const base68EncodedPK = base58.encode(publicKey)
-  // const publicKeyMultibase = `z6mk${base68EncodedPK}`
-  // const did = `did:key:${publicKeyMultibase}`
   const did = publicKeyToDid(publicKey)
   const didDocument = {
     "@context": [

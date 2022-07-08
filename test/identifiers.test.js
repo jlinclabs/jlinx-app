@@ -7,7 +7,8 @@ const {
 
 test('did <-> publicKey', async (t, createClient) => {
   const client = await createClient()
-  const { did } = await client.identifiers.create()
+  const { did } = await client.identifiers.createDidKey()
+  console.log({ did })
   const publicKey = didToPublicKey(did)
   t.equal(did, publicKeyToDid(publicKey))
   t.equal(
@@ -16,12 +17,12 @@ test('did <-> publicKey', async (t, createClient) => {
   )
 })
 
-test('identifiers', async (t, createClient) => {
+test('jlinx.identifiers.createDidKey', async (t, createClient) => {
   const client1 = await createClient(t.jlinxHosts[0].url)
   const client2 = await createClient(t.jlinxHosts[1].url)
   t.notEquals(client1.host.url, client2.host.url)
 
-  const identifierA = await client1.identifiers.create()
+  const identifierA = await client1.identifiers.createDidKey()
   t.equals(identifierA.constructor.name, 'Identifier')
   t.ok(identifierA.did.startsWith('did:key:'))
   t.ok(identifierA.canSign)
