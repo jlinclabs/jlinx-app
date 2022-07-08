@@ -7,20 +7,20 @@ const {
 const debug = Debug('jlinx:client:identifiers')
 
 module.exports = class Identifiers {
-  constructor(jlinx){
+  constructor (jlinx) {
     this.jlinx = jlinx
     this.keys = jlinx.vault.keyStore('identifiers')
   }
 
-  async createDidKey(){
+  async createDidKey () {
     const signingKeyPair = await this.keys.createSigningKeyPair()
     return new Identifier(signingKeyPair)
   }
 
-  async createDidDocument(){
+  async createDidDocument () {
   }
 
-  async get(did){
+  async get (did) {
     debug('get', { did })
     const publicKey = didToPublicKey(did)
     debug('get', { publicKey })
@@ -30,10 +30,8 @@ module.exports = class Identifiers {
   }
 }
 
-
 class Identifier {
-
-  constructor(signingKeyPair){
+  constructor (signingKeyPair) {
     this.signingKeyPair = signingKeyPair
     this.publicKey = signingKeyPair.publicKey
     this.did = publicKeyToDid(this.publicKey)
@@ -48,9 +46,9 @@ class Identifier {
       indent + ')'
   }
 
-  get canSign(){ return !!this.signingKeyPair.sign }
+  get canSign () { return !!this.signingKeyPair.sign }
 
-  get didDocument(){
+  get didDocument () {
     return signingKeyToDidDocument(this.publicKey)
   }
 }
@@ -58,65 +56,64 @@ class Identifier {
 Object.assign(module.exports, {
   didToPublicKey,
   publicKeyToDid,
-  signingKeyToDidDocument,
+  signingKeyToDidDocument
 })
 
 const DID_PREFIX = 'did:key:z6mk'
-function didToPublicKey(did){
-  let matches = did.match(/^did:([^:]+):(.+)$/)
-  console.log({ matches })
-  if (!matches){
+function didToPublicKey (did) {
+  const matches = did.match(/^did:([^:]+):(.+)$/)
+  if (!matches) {
     throw new Error(`invalid did "${did}"`)
   }
   const [_, method, id] = matches
-  if (method === 'key'){
-    if (!id.startsWith('z6mk')){
+  if (method === 'key') {
+    if (!id.startsWith('z6mk')) {
       throw new Error(`invalid key encoding format "${did}"`)
     }
     return b4a.from(base58.decode(id.slice(4)))
   }
-  if (method === 'jlinx'){
-
+  if (method === 'jlinx') {
+    throw new Error(`did:jlinx support not done yet`)
   }
 }
 
-
-function publicKeyToDid(publicKey){
+function publicKeyToDid (publicKey) {
   return `${DID_PREFIX}${base58.encode(keyToBuffer(publicKey))}`
 }
 
-function signingKeyToDidDocument(publicKey){
+function signingKeyToDidDocument (publicKey) {
   const did = publicKeyToDid(publicKey)
+  const publicKeyMultibase = did.split(DID_PREFIX)[1]
   const didDocument = {
-    "@context": [
-      "https://www.w3.org/ns/did/v1",
-      "https://w3id.org/security/suites/ed25519-2020/v1",
-      "https://w3id.org/security/suites/x25519-2020/v1"
+    '@context': [
+      'https://www.w3.org/ns/did/v1',
+      'https://w3id.org/security/suites/ed25519-2020/v1',
+      'https://w3id.org/security/suites/x25519-2020/v1'
     ],
-    "id": `${did}`,
-    "verificationMethod": [{
-      "id": `${did}#${publicKeyMultibase}`,
-      "type": "Ed25519VerificationKey2020",
-      "controller": `${did}`,
-      "publicKeyMultibase": `${publicKeyMultibase}`
+    id: `${did}`,
+    verificationMethod: [{
+      id: `${did}#${publicKeyMultibase}`,
+      type: 'Ed25519VerificationKey2020',
+      controller: `${did}`,
+      publicKeyMultibase: `${publicKeyMultibase}`
     }],
-    "authentication": [
+    authentication: [
       `${did}#${publicKeyMultibase}`
     ],
-    "assertionMethod": [
+    assertionMethod: [
       `${did}#${publicKeyMultibase}`
     ],
-    "capabilityDelegation": [
+    capabilityDelegation: [
       `${did}#${publicKeyMultibase}`
     ],
-    "capabilityInvocation": [
+    capabilityInvocation: [
       `${did}#${publicKeyMultibase}`
     ],
-    "keyAgreement": [{
-      "id": `${did}#${publicKeyMultibase}`,
-      "type": "X25519KeyAgreementKey2020",
-      "controller": `${did}`,
-      "publicKeyMultibase": `${publicKeyMultibase}`
+    keyAgreement: [{
+      id: `${did}#${publicKeyMultibase}`,
+      type: 'X25519KeyAgreementKey2020',
+      controller: `${did}`,
+      publicKeyMultibase: `${publicKeyMultibase}`
     }]
   }
 

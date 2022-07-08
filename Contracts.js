@@ -1,17 +1,16 @@
 
-
 module.exports = class Contracts {
-  constructor(jlinx){
+  constructor (jlinx) {
     this.jlinx = jlinx
   }
 
-  async create(){
+  async create () {
     const doc = await this.jlinx.create({
       docType: 'Contract'
     })
   }
 
-  async sign(){
+  async sign () {
 
   }
 }

@@ -15,5 +15,4 @@ test('contracts', async (t, createClient) => {
 
   await client2.contracts.sign(contractId)
   t.end()
-
 })
