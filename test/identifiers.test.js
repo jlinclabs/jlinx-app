@@ -5,17 +5,15 @@ const {
   publicKeyToDid,
 } = require('../Identifiers')
 
-test.only('did <-> publicKey', async (t, createClient) => {
+test('did <-> publicKey', async (t, createClient) => {
   const client = await createClient()
-
   const { did } = await client.identifiers.create()
-  console.log({ did })
-
   const publicKey = didToPublicKey(did)
-  console.log({ did, publicKey })
   t.equal(did, publicKeyToDid(publicKey))
-  t.equal(publicKey,  didToPublicKey(did))
-
+  t.equal(
+    publicKey.toString('hex'),
+    didToPublicKey(did).toString('hex'),
+  )
 })
 
 test('identifiers', async (t, createClient) => {
@@ -24,12 +22,18 @@ test('identifiers', async (t, createClient) => {
   t.notEquals(client1.host.url, client2.host.url)
 
   const identifierA = await client1.identifiers.create()
-  console.log({ identifierA })
+  t.equals(identifierA.constructor.name, 'Identifier')
+  t.ok(identifierA.did.startsWith('did:key:'))
+  t.ok(identifierA.canSign)
 
-  const identifierA1 = await client1.identifiers.get(identifierA.did)
+  const identifierA1 = await client2.identifiers.get(identifierA.did)
+  t.equal(identifierA1.did, identifierA.did)
+  t.ok(!identifierA1.canSign)
 
-  console.log({ identifierA1 })
+  t.equals(
+    identifierA.publicKey.toString('hex'),
+    identifierA1.publicKey.toString('hex')
+  )
 
-  // await client2.contracts.sign(contractId)
   t.end()
 })

@@ -4,7 +4,7 @@ const {
   base58, keyToString, keyToBuffer
 } = require('jlinx-util')
 
-const debug = Debug('jlinc:client:identifiers')
+const debug = Debug('jlinx:client:identifiers')
 
 module.exports = class Identifiers {
   constructor(jlinx){
@@ -14,26 +14,22 @@ module.exports = class Identifiers {
 
   async create(){
     const signingKeyPair = await this.keys.createSigningKeyPair()
-    debug( 'CREATE', {signingKeyPair} )
+    debug('create', {
+      publicKey: signingKeyPair.publicKey,
+      did: publicKeyToDid(signingKeyPair.publicKey),
+      pkfd: didToPublicKey(publicKeyToDid(signingKeyPair.publicKey)),
+    })
+    // debug('create', { publicKey: keyToString(signingKeyPair.publicKey) })
     return new Identifier(signingKeyPair)
-    // const didDocument = signingKeyToDidDocument(keyBox.publicKey)
-    // console.log({ didDocument })
-    // return didDocument.id
   }
 
   async get(did){
     debug('get', { did })
-    // if (typeof publicKey === 'string' && publicKey.startsWith('did:key:'))
-    const publicKey = did.split('did:key:')[1]
-    const publicKeyBuffer = base58.decode(publicKey)
-    console.log({
-      did,
-      publicKey,
-      pkb: publicKeyBuffer,
-    })
-    const signingKeyPair = await this.keys.get(base58.decode(publicKey))
-    console.log({ signingKeyPair })
-    if (signingKeyPair) return new Identifier(signingKeyPair)
+    const publicKey = keyToBuffer(didToPublicKey(did))
+    debug('get', { publicKey })
+    const signingKeyPair = await this.keys.get(publicKey)
+    debug('get', { signingKeyPair })
+    return new Identifier(signingKeyPair || { publicKey })
   }
 }
 
@@ -52,8 +48,11 @@ class Identifier {
     if (typeof opts.indentationLvl === 'number') { while (indent.length < opts.indentationLvl) indent += ' ' }
     return this.constructor.name + '(\n' +
       indent + '  did: ' + opts.stylize(this.did, 'string') + '\n' +
+      indent + '  canSign: ' + opts.stylize(this.canSign, 'boolean') + '\n' +
       indent + ')'
   }
+
+  get canSign(){ return !!this.signingKeyPair.sign }
 
   get didDocument(){
     return signingKeyToDidDocument(this.publicKey)
@@ -66,36 +65,19 @@ Object.assign(module.exports, {
   signingKeyToDidDocument,
 })
 
-
-
-// const { publicKey } = signingKeyPair
-// console.log('\n\n\n???', {
-//   publicKey,
-//   publicKeyAsString: keyToString(publicKey),
-//   publicKeyFromString: keyToBuffer(keyToString(publicKey)),
-//   publicKeyB58: base58.encode(publicKey),
-//   publicKeyFromB58: b4a.from(base58.decode(base58.encode(publicKey))),
-// })
-
 const DID_PREFIX = 'did:key:z6mk'
 function didToPublicKeyBuffer(did){
   const publicKey = did.split(DID_PREFIX)[1]
-  const buffer = b4a.from(base58.decode(publicKey))
-  return buffer
+  return b4a.from(base58.decode(publicKey))
 }
 
 function didToPublicKey(did){
-  console.trace('didToPublicKey', { did })
-  const pkb = didToPublicKeyBuffer(did)
-  const publicKeyAsString = keyToString(pkb)
-  return publicKeyAsString
+  return didToPublicKeyBuffer(did)
+  return keyToString(didToPublicKeyBuffer(did))
 }
 
 function publicKeyToDid(publicKey){
-  console.log('publicKeyToDid', {publicKey})
-  const base58encoded = base58.encode(keyToBuffer(publicKey))
-  console.log('publicKeyToDid', {base58encoded})
-  return `${DID_PREFIX}${base58encoded}`
+  return `${DID_PREFIX}${base58.encode(keyToBuffer(publicKey))}`
 }
 
 function signingKeyToDidDocument(publicKey){
