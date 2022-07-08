@@ -47,20 +47,25 @@ module.exports.test = function (name, fn, _tape = tape) {
     }
 
     const jlinxHosts = []
+    const jlinxHostHttpServers = []
+
     const createHost = async () => {
+      const port = await getPort()
+      const url = `http://localhost:${port}`
       const jlinxHost = new JlinxHost({
         topic: Buffer.from('theoffline_jlinx_hypercore_topic'),
         storagePath: await newTmpDir(),
         bootstrap: [...bootstrap],
-        url: `http://${Vault.generateKey().toString('hex')}.com`,
+        // url: `http://${Vault.generateKey().toString('hex')}.com`,
+        url,
         keyPair: createSigningKeyPair(),
         vaultKey: Vault.generateKey()
       })
       debug('created jlinxHost', jlinxHost)
       jlinxHosts.push(jlinxHost)
-      // await jlinxHost.ready()
-      // debug('jlinxHost ready', jlinxHost)
-
+      const httpServer = createJlinxHostHttpServer(jlinxHost)
+      jlinxHostHttpServers.push(httpServer)
+      await httpServer.start({ port, url })
       return jlinxHost
     }
     while (jlinxHosts.length < 2) await createHost()
@@ -72,14 +77,6 @@ module.exports.test = function (name, fn, _tape = tape) {
       jlinxHosts.some(host => host.node.peers.size === 0)
     ) { throw new Error('hosts failed to connect') }
     debug('jlinx hosts connected')
-
-    const jlinxHostHttpServers = []
-    for (const jlinxHost of jlinxHosts) {
-      const httpServer = createJlinxHostHttpServer(jlinxHost)
-      jlinxHostHttpServers.push(httpServer)
-      await httpServer.start()
-    }
-    debug('jlinx host http servers up')
 
     const jlinxClients = []
     const createClient = async (
@@ -120,4 +117,9 @@ function destroy (...nodes) {
     if (Array.isArray(node)) destroy(...node)
     else node.destroy()
   }
+}
+
+let getPort = async (...args) => {
+  getPort = (await import('get-port')).default
+  return getPort(...args)
 }
