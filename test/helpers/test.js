@@ -70,18 +70,16 @@ module.exports.test = function (name, fn, _tape = tape) {
     )
     if (
       jlinxHosts.some(host => host.node.peers.size === 0)
-    ){ throw new Error(`hosts failed to connect`) }
+    ) { throw new Error('hosts failed to connect') }
     debug('jlinx hosts connected')
 
-
     const jlinxHostHttpServers = []
-    for (const jlinxHost of jlinxHosts){
+    for (const jlinxHost of jlinxHosts) {
       const httpServer = createJlinxHostHttpServer(jlinxHost)
       jlinxHostHttpServers.push(httpServer)
       await httpServer.start()
     }
     debug('jlinx host http servers up')
-
 
     const jlinxClients = []
     const createClient = async (

@@ -44,7 +44,7 @@ module.exports = class JlinxClient {
     await this.host.destroy()
   }
 
-  async connected(){ return this.host.connected() }
+  async connected () { return this.host.connected() }
 
   async create () {
     debug('create')

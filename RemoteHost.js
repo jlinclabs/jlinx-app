@@ -45,7 +45,7 @@ module.exports = class RemoteHost {
     debug('ready')
   }
 
-  async connected(){
+  async connected () {
     await this.ready()
   }
 
