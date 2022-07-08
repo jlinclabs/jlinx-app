@@ -8,7 +8,6 @@ const {
 test('did <-> publicKey', async (t, createClient) => {
   const client = await createClient()
   const { did } = await client.identifiers.createDidKey()
-  console.log({ did })
   const publicKey = didToPublicKey(did)
   t.equal(did, publicKeyToDid(publicKey))
   t.equal(

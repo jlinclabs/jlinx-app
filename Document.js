@@ -5,9 +5,7 @@ const debug = Debug('jlinx:client:document')
 
 module.exports = class Document {
   static async open (opts) {
-    const DocumentClass = Document
-    // if opts changes type
-    const doc = new DocumentClass(opts)
+    const doc = new Document(opts)
     await doc.ready()
     return doc
   }

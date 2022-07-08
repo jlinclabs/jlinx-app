@@ -76,11 +76,12 @@ module.exports = class JlinxClient {
       ownerSigningKeys,
       length: 0
     })
-    const instance = new TypeClass(doc, this)
-    if (instance.init) await instance.init(initOpts)
-    else await instance.ready()
-    debug('created', instance)
-    return instance
+    return doc
+    // const instance = new TypeClass(doc, this)
+    // if (instance.init) await instance.init(initOpts)
+    // else await instance.ready()
+    // debug('created', instance)
+    // return instance
   }
 
   async get (id) {
