@@ -28,6 +28,7 @@ module.exports.test = function (name, fn, _tape = tape) {
       await node.ready()
       bootstrap.push({ host: '127.0.0.1', port: node.address().port })
     }
+    debug(`bootstrappers ready`, bootstrappers)
     debug({ bootstrap })
 
     while (nodes.length < 3) {
@@ -35,6 +36,8 @@ module.exports.test = function (name, fn, _tape = tape) {
       await node.ready()
       nodes.push(node)
     }
+    debug(`DHT Nodes ready`, nodes)
+
 
     const tmpDirs = []
     const newTmpDir = async () => {
@@ -49,14 +52,15 @@ module.exports.test = function (name, fn, _tape = tape) {
     const createHost = async () => {
       const jlinxHost = new JlinxHost({
         storagePath: await newTmpDir(),
-        bootstrap,
-        url: 'http://example.com',
+        bootstrap: [...bootstrap],
+        url: `http://${Vault.generateKey().toString('hex')}.com`,
         keyPair: createSigningKeyPair(),
         vaultKey: Vault.generateKey()
       })
       debug('created jlinxHost', jlinxHost)
       jlinxHosts.push(jlinxHost)
-      await jlinxHost.ready()
+      // await jlinxHost.ready()
+      // debug('jlinxHost ready', jlinxHost)
       const httpServer = createJlinxHostHttpServer(jlinxHost)
       await httpServer.start()
       jlinxHostHttpServers.push(httpServer)
@@ -64,6 +68,14 @@ module.exports.test = function (name, fn, _tape = tape) {
     }
     while (jlinxHosts.length < 2) await createHost()
     debug(`started ${jlinxHosts.length} jlinx hosts`)
+    // console.log('!!!!jlinxHosts', [
+    //   jlinxHosts[0].node.swarm,
+    //   jlinxHosts[1].node.swarm,
+    // ])
+    await Promise.all(
+      jlinxHosts.map(jlinxHost => jlinxHost.connected())
+    )
+    debug(`jlinx hosts connected`)
 
     const jlinxClients = []
 
@@ -82,14 +94,23 @@ module.exports.test = function (name, fn, _tape = tape) {
     }
 
     t.jlinxHosts = jlinxHostHttpServers
-    await fn(t, createClient)
 
-    destroy(jlinxClients)
-    destroy(jlinxHostHttpServers)
-    destroy(jlinxHosts)
-    destroy(tmpDirs)
-    destroy(bootstrappers)
-    destroy(nodes)
+    t.teardown(() => {
+      destroy(jlinxClients)
+      destroy(jlinxHostHttpServers)
+      destroy(jlinxHosts)
+      destroy(tmpDirs)
+      destroy(bootstrappers)
+      destroy(nodes)
+    })
+
+    let error
+    try {
+      await fn(t, createClient)
+    } catch (e) {
+      error = e
+    }
+    t.end(error)
   }
 }
 exports.test.only = (name, fn) => exports.test(name, fn, tape.only)

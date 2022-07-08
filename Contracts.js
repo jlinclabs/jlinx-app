@@ -2,7 +2,6 @@
 const Contract = require('./Contract')
 
 module.exports = class Contracts {
-
   constructor (jlinx) {
     this.jlinx = jlinx
   }

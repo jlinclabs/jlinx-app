@@ -89,7 +89,7 @@ module.exports = class JlinxClient {
       ? await this.vault.keys.get(keyToBuffer(docRecord.ownerSigningKey))
       : undefined
     debug('get', { id, ownerSigningKeys })
-    let doc = await Document.open({
+    const doc = await Document.open({
       host: this.host,
       id,
       ownerSigningKeys

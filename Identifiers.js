@@ -73,7 +73,7 @@ function didToPublicKey (did) {
     return b4a.from(base58.decode(id.slice(4)))
   }
   if (method === 'jlinx') {
-    throw new Error(`did:jlinx support not done yet`)
+    throw new Error('did:jlinx support not done yet')
   }
 }
 

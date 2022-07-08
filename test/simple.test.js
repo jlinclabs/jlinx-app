@@ -1,8 +1,21 @@
 const b4a = require('b4a')
 const { test } = require('./helpers/test.js')
 
+test.only('smoke test', async (t, createClient) => {
+  const [client1, client2] = await Promise.all([
+    await createClient(),
+    await createClient(),
+  ])
+  await Promise.all([
+    await client1.connected(),
+    await client2.connected(),
+  ])
+})
+
 test('sync same host', async (t, createClient) => {
   const client = await createClient()
+  await client.connected()
+
   const doc1 = await client.create()
 
   t.equal(doc1.length, 0)
@@ -20,7 +33,7 @@ test('sync same host', async (t, createClient) => {
 
   await doc1.append([
     b4a.from('block one'),
-    b4a.from('block two'),
+    b4a.from('block two')
   ])
 
   t.equal(doc1.length, 2)
@@ -31,14 +44,14 @@ test('sync same host', async (t, createClient) => {
 
   await doc2.append([
     b4a.from('block three'),
-    b4a.from('block four'),
+    b4a.from('block four')
   ])
   t.equal(doc1.length, 2)
   t.equal(doc2.length, 4)
   await doc1.update()
   t.equal(doc1.length, 4)
 
-  for (let doc of [doc1, doc2]){
+  for (const doc of [doc1, doc2]) {
     t.deepEqual(
       (await doc.get(0)).toString(),
       'block one'
@@ -60,7 +73,7 @@ test('sync same host', async (t, createClient) => {
   t.end()
 })
 
-test.only('sync diff host', async (t, createClient) => {
+test('sync diff host', async (t, createClient) => {
   const client1 = await createClient(t.jlinxHosts[0].url)
   const client2 = await createClient(t.jlinxHosts[1].url)
   const doc1 = await client1.create()
@@ -81,7 +94,7 @@ test.only('sync diff host', async (t, createClient) => {
 
   await doc1.append([
     b4a.from('block one'),
-    b4a.from('block two'),
+    b4a.from('block two')
   ])
 
   t.equal(doc1.length, 2)
@@ -93,14 +106,14 @@ test.only('sync diff host', async (t, createClient) => {
 
   await doc1.append([
     b4a.from('block three'),
-    b4a.from('block four'),
+    b4a.from('block four')
   ])
   t.equal(doc1.length, 4)
   t.equal(doc2.length, 2)
   await doc2.update()
   t.equal(doc2.length, 4)
 
-  for (let doc of [doc1, doc2]){
+  for (const doc of [doc1, doc2]) {
     t.deepEqual(
       (await doc.get(0)).toString(),
       'block one'

@@ -38,7 +38,7 @@ test('jlinx.identifiers.createDidKey', async (t, createClient) => {
   const identifierB = await client2.identifiers
     .get('did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ')
 
-    t.deepEquals(
+  t.deepEquals(
     identifierB.didDocument,
     {
       '@context': [
@@ -46,30 +46,30 @@ test('jlinx.identifiers.createDidKey', async (t, createClient) => {
         'https://w3id.org/security/suites/ed25519-2020/v1',
         'https://w3id.org/security/suites/x25519-2020/v1'
       ],
-      id: `did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ`,
+      id: 'did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ',
       verificationMethod: [{
-        id: `did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ#Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ`,
+        id: 'did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ#Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ',
         type: 'Ed25519VerificationKey2020',
-        controller: `did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ`,
-        publicKeyMultibase: `Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ`
+        controller: 'did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ',
+        publicKeyMultibase: 'Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ'
       }],
       authentication: [
-        `did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ#Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ`
+        'did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ#Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ'
       ],
       assertionMethod: [
-        `did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ#Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ`
+        'did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ#Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ'
       ],
       capabilityDelegation: [
-        `did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ#Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ`
+        'did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ#Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ'
       ],
       capabilityInvocation: [
-        `did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ#Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ`
+        'did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ#Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ'
       ],
       keyAgreement: [{
-        id: `did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ#Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ`,
+        id: 'did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ#Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ',
         type: 'X25519KeyAgreementKey2020',
-        controller: `did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ`,
-        publicKeyMultibase: `Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ`
+        controller: 'did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ',
+        publicKeyMultibase: 'Cv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ'
       }]
     }
   )
