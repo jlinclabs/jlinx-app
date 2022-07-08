@@ -49,6 +49,7 @@ module.exports.test = function (name, fn, _tape = tape) {
     const jlinxHosts = []
     const createHost = async () => {
       const jlinxHost = new JlinxHost({
+        topic: Buffer.from('theoffline_jlinx_hypercore_topic'),
         storagePath: await newTmpDir(),
         bootstrap: [...bootstrap],
         url: `http://${Vault.generateKey().toString('hex')}.com`,
@@ -65,8 +66,8 @@ module.exports.test = function (name, fn, _tape = tape) {
     while (jlinxHosts.length < 2) await createHost()
     debug(`started ${jlinxHosts.length} jlinx hosts`)
     console.log('!!!!jlinxHosts', [
-      jlinxHosts[0].node.swarm.dht.bootstrapNodes,
-      jlinxHosts[1].node.swarm.dht.bootstrapNodes,
+      jlinxHosts[0].node,
+      jlinxHosts[1].node,
     ])
     await Promise.all(
       jlinxHosts.map(jlinxHost => jlinxHost.connected())
@@ -97,9 +98,11 @@ module.exports.test = function (name, fn, _tape = tape) {
       return jlinxClient
     }
 
-    t.jlinxHosts = jlinxHostHttpServers
+    t.jlinxHosts = jlinxHosts
+    t.jlinxHostHttpServers = jlinxHostHttpServers
 
     t.teardown(() => {
+      debug('TEST TEARDOWN')
       destroy(jlinxClients)
       destroy(jlinxHostHttpServers)
       destroy(jlinxHosts)

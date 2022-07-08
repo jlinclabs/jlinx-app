@@ -15,7 +15,7 @@ module.exports = class Document {
     this.id = opts.id
     this.ownerSigningKeys = opts.ownerSigningKeys
     this.writable = !!opts.ownerSigningKeys
-    // set on create of loaded from cache
+    // set on create if loaded from cache
     this.length = opts.length
     this._cache = opts._cache || []
     this._opening = this._open()

@@ -1,6 +1,7 @@
 const Path = require('path')
 const Debug = require('debug')
 const b4a = require('b4a')
+
 const debug = Debug('jlinx:client:remotehost')
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
@@ -42,6 +43,10 @@ module.exports = class RemoteHost {
     }
     this.publicKey = publicKey
     debug('ready')
+  }
+
+  async connected(){
+    await this.ready()
   }
 
   async create (opts) {

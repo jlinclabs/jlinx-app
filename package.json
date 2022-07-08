@@ -29,7 +29,7 @@
     "node-fetch": "^3.2.4"
   },
   "devDependencies": {
-    "@hyperswarm/dht": "^6.2.0",
+    "@hyperswarm/dht": "^5.0.25",
     "jlinx-host": "github:jlinclabs/jlinx-host#4ce30ccd3569d41588670fb721a4f2353420f0d0",
     "standard": "^17.0.0",
     "tape": "^5.5.3",
