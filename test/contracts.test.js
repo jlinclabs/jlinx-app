@@ -33,13 +33,12 @@ test('contracts', async (t, createClient) => {
 
   t.equals(alice.contract.id, contractId)
   t.equals(alice.contract.length, bob.contract.length)
-  console.log({'alice.contract.value': alice.contract.value})
 
   /**  ALICE SIGNED THE CONTRACT  **/
-  const contractResponse = await alice.contract.sign({
+  alice.contractResponse = await alice.contract.sign({
     identifier: alice.identifier.did,
   })
-  const aliceSignatureId = contractResponse.id
+  const aliceSignatureId = alice.contractResponse.id
 
   /**  ALICE PASSES BACK THE SIGNATURE ID  **/
 

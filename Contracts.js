@@ -101,18 +101,14 @@ class Contract {
     await this.update()
     // if (this.length > 0) throw new Error('already offered')
     if (this.state !== 'offered'){
-      console.log(this)
       throw new Error(`cannot acknowledge response. contract.state !== 'offered'`)
     }
-
-    const contractResponse = new ContractParty(
-      await this._contracts.jlinx.get(contractResponseId),
-      this._contracts
-    )
-    console.log({ contractResponse })
-    // TODO ensure right contract ID +more
-
-
+    // const contractResponse = new ContractParty(
+    //   await this._contracts.jlinx.get(contractResponseId),
+    //   this._contracts
+    // )
+    // console.log({ contractResponse })
+    // // TODO ensure right contract ID +more
     await this._ledger.append([
       {
         event: 'signerResponded',
