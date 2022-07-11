@@ -80,9 +80,10 @@ module.exports = class Ledger {
 
   async append (events) {
     await this.doc.append(
-      events.map(event =>
-        this.encode(event)
-      )
+      events.map(event => {
+        // TODO add some event sorting metadata here
+        return this.encode(event)
+      })
     )
   }
 
