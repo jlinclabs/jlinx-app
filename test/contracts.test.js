@@ -59,7 +59,8 @@ test('contracts', async (t, createClient) => {
     contractId,
     contractUrl: 'https://contracts.io/freemoney.md',
     jlinxHost: bob.client.host.url,
-    signer: alice.identifier.did
+    signer: alice.identifier.did,
+    signatureId: aliceSignatureId,
   })
 
   t.end()

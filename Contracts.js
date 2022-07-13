@@ -60,10 +60,11 @@ class Contract {
         )
         const _moreEntries = await contractResponse._ledger.entries()
         entries = [...entries, ..._moreEntries]
-      } else if (entry.event === 'signed') {
-        // if (entry.event.contractId )
         value.state = 'signed'
+        value.signatureId = entry.contractResponseId
+      } else if (entry.event === 'signed') {
         value.signer = entry.signer
+
       } else {
         console.warn('ignoring unknown entry', entry)
       }
