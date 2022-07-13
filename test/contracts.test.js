@@ -24,9 +24,9 @@ test('contracts', async (t, createClient) => {
     state: 'offered',
     offerer: bob.identifier.did,
     contractId,
-    contractUrl: 'https://contracts.io/freemoney.md'
+    contractUrl: 'https://contracts.io/freemoney.md',
+    jlinxHost: bob.client.host.url,
   })
-
 
   /**  BOB PASSES ALICE THE CONTRACT ID  **/
   alice.contract = await alice.client.contracts.get(contractId)
@@ -36,7 +36,7 @@ test('contracts', async (t, createClient) => {
 
   /**  ALICE SIGNED THE CONTRACT  **/
   alice.contractResponse = await alice.contract.sign({
-    identifier: alice.identifier.did,
+    identifier: alice.identifier.did
   })
   const aliceSignatureId = alice.contractResponse.id
 
@@ -47,7 +47,8 @@ test('contracts', async (t, createClient) => {
     state: 'offered',
     offerer: bob.identifier.did,
     contractId,
-    contractUrl: 'https://contracts.io/freemoney.md'
+    contractUrl: 'https://contracts.io/freemoney.md',
+    jlinxHost: bob.client.host.url,
   })
 
   await bob.contract.ackSignerResponse(aliceSignatureId)
@@ -57,7 +58,8 @@ test('contracts', async (t, createClient) => {
     offerer: bob.identifier.did,
     contractId,
     contractUrl: 'https://contracts.io/freemoney.md',
-    signer: alice.identifier.did,
+    jlinxHost: bob.client.host.url,
+    signer: alice.identifier.did
   })
 
   t.end()
