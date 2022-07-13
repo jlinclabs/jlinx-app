@@ -8,12 +8,14 @@ module.exports = class Contracts {
   }
 
   async create (opts = {}) {
+    await this.jlinx.connected()
     const doc = await this.jlinx.create()
     debug('create', { doc })
     return await Contract.open(doc, this)
   }
 
   async get (id) {
+    await this.jlinx.connected()
     debug('get', { id })
     const doc = await this.jlinx.get(id)
     return await Contract.open(doc, this)
