@@ -52,6 +52,7 @@ class Contract {
         value.state = 'offered'
         value.contractUrl = entry.contractUrl
         value.offerer = entry.offerer
+        value.signatureDropoffUrl = entry.signatureDropoffUrl
         value.jlinxHost = entry.jlinxHost
       } else if (entry.event === 'signerResponded') {
         const contractResponse = new ContractParty(
@@ -64,7 +65,6 @@ class Contract {
         value.signatureId = entry.contractResponseId
       } else if (entry.event === 'signed') {
         value.signer = entry.signer
-
       } else {
         console.warn('ignoring unknown entry', entry)
       }
@@ -72,14 +72,22 @@ class Contract {
     this._value = value
   }
 
-  async offerContract ({ identifier, contractUrl }) {
+  async offerContract (options = {}) {
+    const {
+      offerer,
+      contractUrl,
+      signatureDropoffUrl,
+    } = options
+    if (!offerer) throw new Error(`offerer is required`)
+    if (!contractUrl) throw new Error(`contractUrl is required`)
     if (this.length > 0) throw new Error('already offered')
     await this._ledger.append([
       {
         event: 'offered',
-        offerer: identifier,
+        offerer,
         contractUrl,
-        jlinxHost: this._contracts.jlinx.host.url,
+        signatureDropoffUrl,
+        jlinxHost: this._contracts.jlinx.host.url
       }
     ])
     await this.update()

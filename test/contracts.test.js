@@ -15,8 +15,9 @@ test('contracts', async (t, createClient) => {
 
   /**  BOB CREATES A CONTRACT  **/
   await bob.contract.offerContract({
-    identifier: bob.identifier.did,
-    contractUrl: 'https://contracts.io/freemoney.md'
+    offerer: bob.identifier.did,
+    contractUrl: 'https://contracts.io/freemoney.md',
+    signatureDropoffUrl: 'https://example.com/jlinx/contracts/signatures'
   })
 
   const contractId = bob.contract.id
@@ -26,6 +27,7 @@ test('contracts', async (t, createClient) => {
     contractId,
     contractUrl: 'https://contracts.io/freemoney.md',
     jlinxHost: bob.client.host.url,
+    signatureDropoffUrl: 'https://example.com/jlinx/contracts/signatures'
   })
 
   /**  BOB PASSES ALICE THE CONTRACT ID  **/
@@ -49,6 +51,7 @@ test('contracts', async (t, createClient) => {
     contractId,
     contractUrl: 'https://contracts.io/freemoney.md',
     jlinxHost: bob.client.host.url,
+    signatureDropoffUrl: 'https://example.com/jlinx/contracts/signatures'
   })
 
   await bob.contract.ackSignerResponse(aliceSignatureId)
@@ -59,6 +62,7 @@ test('contracts', async (t, createClient) => {
     contractId,
     contractUrl: 'https://contracts.io/freemoney.md',
     jlinxHost: bob.client.host.url,
+    signatureDropoffUrl: 'https://example.com/jlinx/contracts/signatures',
     signer: alice.identifier.did,
     signatureId: aliceSignatureId,
   })
