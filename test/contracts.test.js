@@ -64,7 +64,7 @@ test('contracts', async (t, createClient) => {
     jlinxHost: bob.client.host.url,
     signatureDropoffUrl: 'https://example.com/jlinx/contracts/signatures',
     signer: alice.identifier.did,
-    signatureId: aliceSignatureId,
+    signatureId: aliceSignatureId
   })
 
   t.end()

@@ -11,24 +11,29 @@ module.exports = class Contracts {
     await this.jlinx.connected()
     const doc = await this.jlinx.create()
     debug('create', { doc })
-    return await Contract.open(doc, this)
+    return this.get(doc.id)
   }
 
   async get (id) {
-    await this.jlinx.connected()
     debug('get', { id })
+    return await this._open(Contract, id)
+  }
+
+  async getParty (id) {
+    debug('getParty', { id })
+    return await this._open(ContractParty, id)
+  }
+
+  async _open (Class, id) {
+    await this.jlinx.connected()
     const doc = await this.jlinx.get(id)
-    return await Contract.open(doc, this)
+    const inst = new Class(doc, this)
+    await inst.update()
+    return inst
   }
 }
 
 class Contract {
-  static async open (doc, contracts) {
-    const contract = new Contract(doc, contracts)
-    await contract.update()
-    return contract
-  }
-
   constructor (doc, contracts) {
     this._ledger = new Ledger(doc)
     this._contracts = contracts
@@ -39,6 +44,7 @@ class Contract {
   get state () { return this._value?.state }
   get contractUrl () { return this._value?.contractUrl }
   get offerer () { return this._value?.offerer }
+  get signatureDropoffUrl () { return this._value?.signatureDropoffUrl }
 
   async update () {
     await this._ledger.update()
@@ -76,10 +82,10 @@ class Contract {
     const {
       offerer,
       contractUrl,
-      signatureDropoffUrl,
+      signatureDropoffUrl
     } = options
-    if (!offerer) throw new Error(`offerer is required`)
-    if (!contractUrl) throw new Error(`contractUrl is required`)
+    if (!offerer) throw new Error('offerer is required')
+    if (!contractUrl) throw new Error('contractUrl is required')
     if (this.length > 0) throw new Error('already offered')
     await this._ledger.append([
       {
@@ -135,6 +141,7 @@ class ContractParty {
   get id () { return this._ledger.id }
   get value () { return this._value }
   get state () { return this._value?.state }
+  get contractId () { return this._value?.contractId }
   get contractUrl () { return this._value?.contractUrl }
   get offerer () { return this._value?.offerer }
 
