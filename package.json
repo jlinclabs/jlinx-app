@@ -31,7 +31,7 @@
   "devDependencies": {
     "@hyperswarm/dht": "^5.0.25",
     "get-port": "^6.1.2",
-    "jlinx-host": "github:jlinclabs/jlinx-host#4ce30ccd3569d41588670fb721a4f2353420f0d0",
+    "jlinx-host": "github:jlinclabs/jlinx-host#731b46fdb3ae11a623218cd757936bde08bb867e",
     "standard": "^17.0.0",
     "tape": "^5.5.3",
     "tmp-promise": "^3.0.3"
