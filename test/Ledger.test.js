@@ -64,5 +64,43 @@ test('Ledger', async (t, createClient) => {
     )
   )
 
+  const client2 = await createClient()
+  await client2.connected()
+  const copyOfDoc1 = await client2.get(doc1.id)
+
+  const copyOfLedger1 = new Ledger(copyOfDoc1)
+  await copyOfLedger1.ready()
+  t.same(copyOfLedger1.length, 3)
+  t.same(copyOfLedger1.writable, false)
+
+
+  t.equal(
+    inspect(copyOfLedger1),
+    (
+      'Ledger(\n' +
+      `  id: ${ledger1.id}\n` +
+      '  writable: false\n' +
+      '  length: 3\n' +
+      '  contentType: application/json\n' +
+      `  host: ${client.host.url}\n` +
+      `  signingKey: ${ledger1.signingKey}\n` +
+      ')'
+    )
+  )
+
+
+  t.same(await copyOfLedger1.get(0, true), expectedHeader)
+  t.same(await copyOfLedger1.get(1, true), { event: 'one', index: 1 })
+  t.same(await copyOfLedger1.get(2, true), { event: 'two', index: 2 })
+
+  t.deepEqual(
+    await copyOfLedger1.entries(),
+    [
+      expectedHeader,
+      { event: 'one', index: 1 },
+      { event: 'two', index: 2 }
+    ]
+  )
+
   t.end()
 })

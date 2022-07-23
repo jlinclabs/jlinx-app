@@ -1,7 +1,7 @@
 const Debug = require('debug')
 const b4a = require('b4a')
 const jsonCanonicalize = require('canonicalize')
-const { keyToBuffer } = require('jlinx-util')
+const { verify, keyToBuffer } = require('jlinx-util')
 const debug = Debug('jlinx:client:Ledger')
 
 module.exports = class Ledger {
@@ -34,6 +34,7 @@ module.exports = class Ledger {
     if (!this._header) {
       this._header = await this.doc.header()
       if (
+        this.doc.ownerSigningKeys &&
         !b4a.equals(
           keyToBuffer(this._header.signingKey),
           this.doc.ownerSigningKeys.publicKey
@@ -69,10 +70,12 @@ module.exports = class Ledger {
   }
 
   async _verify (entry) {
+    await this.header()
     const { __signature, ...signed } = entry
-    return await this.doc.ownerSigningKeys.verify(
+    return await verify(
       b4a.from(jsonCanonicalize(signed)),
-      b4a.from(__signature, 'hex')
+      b4a.from(__signature, 'hex'),
+      keyToBuffer(this.signingKey),
     )
   }
 
