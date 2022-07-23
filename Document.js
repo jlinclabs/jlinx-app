@@ -1,5 +1,6 @@
 const Debug = require('debug')
 const b4a = require('b4a')
+const { keyToString } = require('jlinx-util')
 
 const debug = Debug('jlinx:client:document')
 
@@ -75,7 +76,8 @@ module.exports = class Document {
     header = JSON.stringify({
       contentType: 'application/octet-stream',
       ...header,
-      host: this.host.url
+      host: this.host.url,
+      signingKey: keyToString(this.ownerSigningKeys.publicKey)
     })
     this._header = JSON.parse(header)
     await this.append([b4a.from(header)])

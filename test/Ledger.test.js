@@ -1,0 +1,52 @@
+const { keyToString } = require('jlinx-util')
+
+const { test } = require('./helpers/test.js')
+const Ledger = require('../Ledger')
+
+test('Ledger', async (t, createClient) => {
+  const client = await createClient()
+  const doc1 = await client.create()
+
+  const ledger1 = new Ledger(doc1)
+
+  t.same(ledger1.length, 0)
+  t.same(ledger1.writable, true)
+
+  await ledger1.init()
+  t.same(ledger1.length, 1)
+
+  const expectedHeader = {
+    contentType: 'application/json',
+    host: client.host.url,
+    signingKey: keyToString(doc1.ownerSigningKeys.publicKey)
+  }
+  t.same(
+    await ledger1.header(),
+    expectedHeader
+  )
+  t.same(
+    await ledger1.get(0),
+    expectedHeader
+  )
+
+  await ledger1.append([
+    { event: 'one', index: 1 },
+    { event: 'two', index: 2 }
+  ])
+
+  t.same(ledger1.length, 3)
+
+  t.same(await ledger1.get(0, true), expectedHeader)
+  t.same(await ledger1.get(1, true), { event: 'one', index: 1 })
+  t.same(await ledger1.get(2, true), { event: 'two', index: 2 })
+
+  t.deepEqual(
+    await ledger1.entries(),
+    [
+      expectedHeader,
+      { event: 'one', index: 1 },
+      { event: 'two', index: 2 }
+    ]
+  )
+  t.end()
+})

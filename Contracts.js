@@ -1,5 +1,5 @@
 const Debug = require('debug')
-const Ledger = require('./docTypes/Ledger')
+const Ledger = require('./Ledger')
 
 const debug = Debug('jlinx:client:contracts')
 module.exports = class Contracts {

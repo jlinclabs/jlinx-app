@@ -22,6 +22,7 @@
   "homepage": "https://github.com/jlinclabs/jlinx-client#readme",
   "dependencies": {
     "b4a": "^1.5.3",
+    "canonicalize": "^1.0.8",
     "debug": "^4.3.4",
     "jlinx-util": "github:jlinclabs/jlinx-util#907a7345b527a017bd62b3f5c8ad51433225c9d6",
     "jlinx-vault": "github:jlinclabs/jlinx-vault#29776247b9fcedda03678a951e5f7b0dab96d014",

@@ -1,5 +1,6 @@
 const Debug = require('debug')
 const b4a = require('b4a')
+const jsonCanonicalize = require('canonicalize')
 
 const debug = Debug('jlinx:client:Ledger')
 
@@ -7,10 +8,8 @@ module.exports = class Ledger {
   constructor (doc) {
     debug({ doc })
     this.doc = doc
-    this._cache = []
   }
 
-  get docType () { return 'Ledger' }
   get id () { return this.doc.id }
   get length () { return this.doc.length }
   get writable () { return this.doc.writable }
@@ -39,52 +38,52 @@ module.exports = class Ledger {
 
   update () { return this.doc.update() }
 
-  encode (event) {
-    return b4a.from(JSON.stringify(event))
-  }
-
-  decode (buffer) {
-    return JSON.parse(buffer)
-  }
-
   async init (header = {}) {
     debug('Ledger INIT', this)
     await this.update()
     if (this.doc.length > 0) {
       throw new Error(
-        `cannot initialize ${this.docType} ` +
+        `cannot initialize ${this} ` +
         'in non-empty document. ' +
         `id="${this.doc.id}" ` +
         `length=${this.doc.length}`
       )
     }
     await this.doc.setHeader({
-      docType: this.docType,
       contentType: 'application/json',
       ...header
     })
     debug('Ledger INIT done', this)
   }
 
-  async get (index) {
+  async get (index, verify = false) {
     if (index > this.length - 1) return
-    let entry = this._cache[index]
-    if (!entry) {
-      const buffer = await this.doc.get(index)
-      entry = this.decode(buffer)
-      this._cache[index] = entry
+    const buffer = await this.doc.get(index)
+    const entry = JSON.parse(buffer)
+    if (index === 0) return entry
+    const signature = b4a.from(entry.__signature, 'hex')
+    delete entry.__signature
+    if (verify) {
+      const json = b4a.from(jsonCanonicalize(entry))
+      const valid = await this.doc.ownerSigningKeys.verify(json, signature)
+      if (!valid) throw new Error('ledger event signature invalid')
     }
     debug('get', { index, entry })
     return entry
   }
 
   async append (events) {
-    await this.doc.append(
-      events.map(event => {
-        // TODO add some event sorting metadata here
-        return this.encode(event)
+    const signedEvents = []
+    for (const event of events) {
+      const json = b4a.from(jsonCanonicalize(event))
+      const signature = await this.doc.ownerSigningKeys.sign(json)
+      const signedEvent = JSON.stringify({
+        ...JSON.parse(json),
+        __signature: signature.toString('hex')
       })
-    )
+      signedEvents.push(b4a.from(signedEvent))
+    }
+    await this.doc.append(signedEvents)
   }
 
   waitForUpdate () { return this.doc.waitForUpdate() }
