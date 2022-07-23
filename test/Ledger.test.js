@@ -73,7 +73,6 @@ test('Ledger', async (t, createClient) => {
   t.same(copyOfLedger1.length, 3)
   t.same(copyOfLedger1.writable, false)
 
-
   t.equal(
     inspect(copyOfLedger1),
     (
@@ -87,7 +86,6 @@ test('Ledger', async (t, createClient) => {
       ')'
     )
   )
-
 
   t.same(await copyOfLedger1.get(0, true), expectedHeader)
   t.same(await copyOfLedger1.get(1, true), { event: 'one', index: 1 })

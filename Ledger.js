@@ -75,7 +75,7 @@ module.exports = class Ledger {
     return await verify(
       b4a.from(jsonCanonicalize(signed)),
       b4a.from(__signature, 'hex'),
-      keyToBuffer(this.signingKey),
+      keyToBuffer(this.signingKey)
     )
   }
 

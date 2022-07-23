@@ -12,3 +12,20 @@
     |- document
       |- core || RemoteCore
 ```
+
+
+## Micro Ledgers
+
+
+to header or not to header?
+
+
+- always has a plain text header
+  - content-type
+  - host
+  - 
+- serialized events as json
+- signs each block
+- adds ids to events
+- adds previous event references?
+- json-ld or json-schema
