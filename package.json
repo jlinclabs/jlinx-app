@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "standard",
-    "test": "standard && tape test/**/*.test.js"
+    "test": "standard && tape $(find test | grep \\.test\\.js$)"
   },
   "repository": {
     "type": "git",
