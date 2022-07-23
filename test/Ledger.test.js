@@ -1,3 +1,4 @@
+const { inspect } = require('util')
 const { keyToString } = require('jlinx-util')
 
 const { test } = require('./helpers/test.js')
@@ -18,7 +19,7 @@ test('Ledger', async (t, createClient) => {
   const expectedHeader = {
     contentType: 'application/json',
     host: client.host.url,
-    signingKey: keyToString(doc1.ownerSigningKeys.publicKey),
+    signingKey: keyToString(doc1.ownerSigningKeys.publicKey)
   }
   t.same(
     await ledger1.header(),
@@ -47,6 +48,20 @@ test('Ledger', async (t, createClient) => {
       { event: 'one', index: 1 },
       { event: 'two', index: 2 }
     ]
+  )
+
+  t.equal(
+    inspect(ledger1),
+    (
+      'Ledger(\n' +
+      `  id: ${ledger1.id}\n` +
+      '  writable: true\n' +
+      '  length: 3\n' +
+      '  contentType: application/json\n' +
+      `  host: ${client.host.url}\n` +
+      `  signingKey: ${ledger1.signingKey}\n` +
+      ')'
+    )
   )
 
   t.end()

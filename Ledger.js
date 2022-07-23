@@ -1,7 +1,7 @@
 const Debug = require('debug')
 const b4a = require('b4a')
 const jsonCanonicalize = require('canonicalize')
-
+const { keyToBuffer } = require('jlinx-util')
 const debug = Debug('jlinx:client:Ledger')
 
 module.exports = class Ledger {
@@ -14,6 +14,8 @@ module.exports = class Ledger {
   get length () { return this.doc.length }
   get writable () { return this.doc.writable }
   get contentType () { return this.doc._header?.contentType }
+  get host () { return this.doc._header?.host }
+  get signingKey () { return this.doc._header?.signingKey }
 
   [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
     let indent = ''
@@ -23,11 +25,21 @@ module.exports = class Ledger {
       indent + '  writable: ' + opts.stylize(this.writable, 'boolean') + '\n' +
       indent + '  length: ' + opts.stylize(this.length, 'number') + '\n' +
       indent + '  contentType: ' + opts.stylize(this.contentType, 'string') + '\n' +
+      indent + '  host: ' + opts.stylize(this.host, 'string') + '\n' +
+      indent + '  signingKey: ' + opts.stylize(this.signingKey, 'string') + '\n' +
       indent + ')'
   }
 
   async header () {
-    if (!this._header) { this._header = await this.doc.header() }
+    if (!this._header) {
+      this._header = await this.doc.header()
+      if (
+        !b4a.equals(
+          keyToBuffer(this._header.signingKey),
+          this.doc.ownerSigningKeys.publicKey
+        )
+      ) throw new Error(`owner signing key mismatch! id=${this.id}`)
+    }
     return this._header
   }
 
@@ -56,7 +68,7 @@ module.exports = class Ledger {
     debug('Ledger INIT done', this)
   }
 
-  async _verify(entry){
+  async _verify (entry) {
     const { __signature, ...signed } = entry
     return await this.doc.ownerSigningKeys.verify(
       b4a.from(jsonCanonicalize(signed)),
@@ -70,9 +82,11 @@ module.exports = class Ledger {
     const entry = JSON.parse(buffer)
     if (index > 0 && verify) {
       const valid = await this._verify(entry)
-      if (!valid) throw new Error(
-        `ledger event signature invalid. index=${index}`
-      )
+      if (!valid) {
+        throw new Error(
+          `ledger event signature invalid. index=${index}`
+        )
+      }
     }
     delete entry.__signature
     debug('get', { index, entry })
