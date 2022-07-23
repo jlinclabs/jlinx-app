@@ -56,18 +56,25 @@ module.exports = class Ledger {
     debug('Ledger INIT done', this)
   }
 
+  async _verify(entry){
+    const { __signature, ...signed } = entry
+    return await this.doc.ownerSigningKeys.verify(
+      b4a.from(jsonCanonicalize(signed)),
+      b4a.from(__signature, 'hex')
+    )
+  }
+
   async get (index, verify = false) {
     if (index > this.length - 1) return
     const buffer = await this.doc.get(index)
     const entry = JSON.parse(buffer)
-    if (index === 0) return entry
-    const signature = b4a.from(entry.__signature, 'hex')
-    delete entry.__signature
-    if (verify) {
-      const json = b4a.from(jsonCanonicalize(entry))
-      const valid = await this.doc.ownerSigningKeys.verify(json, signature)
-      if (!valid) throw new Error('ledger event signature invalid')
+    if (index > 0 && verify) {
+      const valid = await this._verify(entry)
+      if (!valid) throw new Error(
+        `ledger event signature invalid. index=${index}`
+      )
     }
+    delete entry.__signature
     debug('get', { index, entry })
     return entry
   }

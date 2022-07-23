@@ -18,7 +18,7 @@ test('Ledger', async (t, createClient) => {
   const expectedHeader = {
     contentType: 'application/json',
     host: client.host.url,
-    signingKey: keyToString(doc1.ownerSigningKeys.publicKey)
+    signingKey: keyToString(doc1.ownerSigningKeys.publicKey),
   }
   t.same(
     await ledger1.header(),
@@ -48,5 +48,6 @@ test('Ledger', async (t, createClient) => {
       { event: 'two', index: 2 }
     ]
   )
+
   t.end()
 })
