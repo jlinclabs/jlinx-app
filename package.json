@@ -23,7 +23,7 @@
   "dependencies": {
     "b4a": "^1.5.3",
     "debug": "^4.3.4",
-    "jlinx-util": "github:jlinclabs/jlinx-util#279f90fdb3b9237522b7d57d22f9c34ae644bcea",
+    "jlinx-util": "github:jlinclabs/jlinx-util#907a7345b527a017bd62b3f5c8ad51433225c9d6",
     "jlinx-vault": "github:jlinclabs/jlinx-vault#29776247b9fcedda03678a951e5f7b0dab96d014",
     "lodash.isplainobject": "^4.0.6",
     "node-fetch": "^3.2.4"
