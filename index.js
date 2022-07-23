@@ -46,10 +46,13 @@ module.exports = class JlinxClient {
 
   async connected () { return this.host.connected() }
 
-  async create () {
+  async create (opts = {}) {
     debug('create')
     await this.ready()
-    const ownerSigningKeys = await this.vault.keys.createSigningKeyPair()
+
+    const ownerSigningKeys =
+      opts.ownerSigningKeys ||
+      await this.vault.keys.createSigningKeyPair()
     const ownerSigningKey = ownerSigningKeys.publicKey
     const ownerSigningKeyProof = await ownerSigningKeys.sign(
       keyToBuffer(this.host.publicKey)

@@ -8,10 +8,15 @@ module.exports = class Contracts {
   }
 
   async create (opts = {}) {
+    const {
+      ownerSigningKeys
+    } = opts
     await this.jlinx.connected()
-    const doc = await this.jlinx.create()
+    const doc = await this.jlinx.create({
+      ownerSigningKeys
+    })
     debug('create', { doc })
-    return this.get(doc.id)
+    return await Contract.create(doc, this)
   }
 
   async get (id) {
@@ -34,6 +39,12 @@ module.exports = class Contracts {
 }
 
 class Contract {
+  static async create (doc, contracts) {
+    const contract = new Contract(doc, contracts)
+    await contract._ledger.init()
+    return contract
+  }
+
   constructor (doc, contracts) {
     this._ledger = new Ledger(doc)
     this._contracts = contracts
@@ -46,33 +57,35 @@ class Contract {
   get offerer () { return this._value?.offerer }
   get signatureDropoffUrl () { return this._value?.signatureDropoffUrl }
 
+  async events () {
+    const events = await this._ledger.entries()
+    return events.slice(1)
+  }
+
   async update () {
     await this._ledger.update()
     const value = {}
-    value.contractId = this._ledger.id
-    let entries = await this._ledger.entries()
-    // for (const entry of entries){
-    while (entries.length > 0) {
-      const entry = entries.shift()
-      if (entry.event === 'offered') {
+    value.contractId = this.id
+    let events = await this.events()
+    while (events.length > 0) {
+      const event = events.shift()
+      if (event.event === 'offered') {
         value.state = 'offered'
-        value.contractUrl = entry.contractUrl
-        value.offerer = entry.offerer
-        value.signatureDropoffUrl = entry.signatureDropoffUrl
-        value.jlinxHost = entry.jlinxHost
-      } else if (entry.event === 'signerResponded') {
-        const contractResponse = new ContractParty(
-          await this._contracts.jlinx.get(entry.contractResponseId),
-          this._contracts
-        )
-        const _moreEntries = await contractResponse._ledger.entries()
-        entries = [...entries, ..._moreEntries]
+        value.contractUrl = event.contractUrl
+        value.offerer = event.offerer
+        value.signatureDropoffUrl = event.signatureDropoffUrl
+        value.jlinxHost = event.jlinxHost
+      } else if (event.event === 'signerResponded') {
+        const contractResponse =
+          await this._contracts.getParty(event.contractResponseId)
+        const moreEvents = await contractResponse.events()
+        events = [...events, ...moreEvents]
         value.state = 'signed'
-        value.signatureId = entry.contractResponseId
-      } else if (entry.event === 'signed') {
-        value.signer = entry.signer
+        value.signatureId = event.contractResponseId
+      } else if (event.event === 'signed') {
+        value.signer = event.signer
       } else {
-        console.warn('ignoring unknown entry', entry)
+        console.warn('ignoring event', event)
       }
     }
     this._value = value
@@ -102,8 +115,8 @@ class Contract {
   async reject (opts) { return await this._resolve('reject', opts) }
   async sign (opts) { return await this._resolve('sign', opts) }
   async _resolve (move, opts) {
-    const doc = await this._contracts.jlinx.create()
-    const contractParty = new ContractParty(doc, this._contracts)
+    const doc = await this._contracts.jlinx.create(opts)
+    const contractParty = await ContractParty.create(doc, this._contracts)
     await contractParty[move]({ ...opts, contract: this })
     return contractParty
   }
@@ -133,6 +146,12 @@ class Contract {
 }
 
 class ContractParty {
+  static async create (doc, contracts) {
+    const cp = new ContractParty(doc, contracts)
+    await cp._ledger.init()
+    return cp
+  }
+
   constructor (doc, contracts) {
     this._ledger = new Ledger(doc)
     this._contracts = contracts
@@ -145,20 +164,25 @@ class ContractParty {
   get contractUrl () { return this._value?.contractUrl }
   get offerer () { return this._value?.offerer }
 
+  async events () {
+    const events = await this._ledger.entries()
+    return events.slice(1)
+  }
+
   async update () {
     await this._ledger.update()
     const value = {}
-    const entries = await this._ledger.entries()
-    for (const entry of entries) {
+    const events = await this.events()
+    for (const event of events) {
       if (
-        entry.event === 'rejected' ||
-        entry.event === 'signed'
+        event.event === 'rejected' ||
+        event.event === 'signed'
       ) {
-        value.state = entry.event
-        value.contractId = entry.contractId
-        value.signer = entry.signer
+        value.state = event.event
+        value.contractId = event.contractId
+        value.signer = event.signer
       } else {
-        console.warn('ignoring unknown entry', entry)
+        console.warn('ignoring event', event)
       }
     }
     this._value = value

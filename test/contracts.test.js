@@ -12,6 +12,13 @@ test('contracts', async (t, createClient) => {
   bob.identifier = await bob.client.identifiers.createDidKey()
 
   bob.contract = await bob.client.contracts.create()
+  await bob.contract.update()
+  const contractId = bob.contract.id
+
+  t.same(await bob.contract.events(), [])
+  t.same(bob.contract.value, {
+    contractId
+  })
 
   /**  BOB CREATES A CONTRACT  **/
   await bob.contract.offerContract({
@@ -20,7 +27,6 @@ test('contracts', async (t, createClient) => {
     signatureDropoffUrl: 'https://example.com/jlinx/contracts/signatures'
   })
 
-  const contractId = bob.contract.id
   t.deepEqual(bob.contract.value, {
     state: 'offered',
     offerer: bob.identifier.did,
