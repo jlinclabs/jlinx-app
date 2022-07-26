@@ -35,7 +35,6 @@ module.exports = class Identifiers {
   }
 }
 
-
 // class IdentifierEvents extends EventMachine {
 //   static events = {
 
@@ -43,11 +42,11 @@ module.exports = class Identifiers {
 // }
 
 class Identifier extends EventMachine {
-
   constructor (doc, identifiers) {
     super(doc)
     this._identifiers = identifiers
     const { publicKey } = this._ledger.doc.ownerSigningKeys
+    this._publicKey = publicKey
     this._signingKey = keyToString(publicKey)
     this._did = publicKeyToDid(publicKey)
   }
@@ -56,9 +55,10 @@ class Identifier extends EventMachine {
   get host () { return this._ledger._header?.host }
   get writable () { return this._ledger.writable }
   get did () { return this._did }
+  get publicKey () { return this._publicKey }
   get signingKey () { return this._signingKey }
 
-  initialState(){
+  initialState () {
     return {
       services: []
     }
@@ -88,13 +88,13 @@ class Identifier extends EventMachine {
 
   asDidDocument () {
     return signingKeyToDidDocument(this.signingKey, {
-      services: this.services,
+      services: this.services
     })
   }
 }
 
 Identifier.initialState = {
-  services: [],
+  services: []
 }
 
 Identifier.events = {
@@ -106,9 +106,9 @@ Identifier.events = {
         service: {
           type: 'object',
           properties: {
-            id: { type: 'string' }, //"did:example:123#linked-domain",
+            id: { type: 'string' }, // "did:example:123#linked-domain",
             type: { type: 'string' }, // "LinkedDomains",
-            serviceEndpoint: { type: 'string' }, // "https://bar.example.com"
+            serviceEndpoint: { type: 'string' } // "https://bar.example.com"
           },
           required: ['id', 'type', 'serviceEndpoint'],
           additionalProperties: true
@@ -123,7 +123,7 @@ Identifier.events = {
         state.services.find(services =>
           services.id === event.service.id
         )
-      ){
+      ) {
         return `service already referenced by did document: ${event.services.id}`
       }
     },
@@ -154,77 +154,8 @@ Identifier.events = {
         services: state.services.filter(service => service.id !== serviceId)
       }
     }
-  },
-}
-
-function signingKeyToDidDocument (publicKey) {
-  const did = publicKeyToDid(publicKey)
-  const publicKeyMultibase = did.split(DID_PREFIX)[1]
-  const didDocument = {
-    '@context': [
-      'https://www.w3.org/ns/did/v1',
-      'https://w3id.org/security/suites/ed25519-2020/v1',
-      'https://w3id.org/security/suites/x25519-2020/v1'
-    ],
-    id: `${did}`,
-    verificationMethod: [{
-      id: `${did}#${publicKeyMultibase}`,
-      type: 'Ed25519VerificationKey2020',
-      controller: `${did}`,
-      publicKeyMultibase: `${publicKeyMultibase}`
-    }],
-    authentication: [
-      `${did}#${publicKeyMultibase}`
-    ],
-    assertionMethod: [
-      `${did}#${publicKeyMultibase}`
-    ],
-    capabilityDelegation: [
-      `${did}#${publicKeyMultibase}`
-    ],
-    capabilityInvocation: [
-      `${did}#${publicKeyMultibase}`
-    ],
-    keyAgreement: [{
-      id: `${did}#${publicKeyMultibase}`,
-      type: 'X25519KeyAgreementKey2020',
-      controller: `${did}`,
-      publicKeyMultibase: `${publicKeyMultibase}`
-    }]
   }
-
-  return didDocument
 }
-
-// class Identifier {
-//   constructor (signingKeyPair) {
-//     this.signingKeyPair = signingKeyPair
-//     this.publicKey = signingKeyPair.publicKey
-//     this.did = publicKeyToDid(this.publicKey)
-//   }
-
-//   [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
-//     let indent = ''
-//     if (typeof opts.indentationLvl === 'number') { while (indent.length < opts.indentationLvl) indent += ' ' }
-//     return this.constructor.name + '(\n' +
-//       indent + '  did: ' + opts.stylize(this.did, 'string') + '\n' +
-//       indent + '  canSign: ' + opts.stylize(this.canSign, 'boolean') + '\n' +
-//       indent + ')'
-//   }
-
-//   get canSign () { return !!this.signingKeyPair.sign }
-
-//   get didDocument () {
-//     return signingKeyToDidDocument(this.publicKey)
-//   }
-// }
-
-Object.assign(module.exports, {
-  didToPublicKey,
-  publicKeyToDid,
-  signingKeyToDidDocument
-})
-
 const DID_PREFIX = 'did:key:z6mk'
 
 function didToPublicKey (did) {
@@ -281,10 +212,15 @@ function signingKeyToDidDocument (publicKey, opts = {}) {
       type: 'X25519KeyAgreementKey2020',
       controller: `${did}`,
       publicKeyMultibase: `${publicKeyMultibase}`
-    }],
+    }]
   }
 
   if (opts.services) didDocument.services = opts.services
 
   return didDocument
 }
+
+Object.assign(module.exports, {
+  didToPublicKey,
+  publicKeyToDid
+})

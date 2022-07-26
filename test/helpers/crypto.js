@@ -3,7 +3,7 @@ const sodium = require('sodium-universal')
 const {
   createSigningKeyPair,
   sign,
-  verify,
+  verify
 } = require('jlinx-util')
 
 exports.createSigningKeyPair = (seed) => {
@@ -19,13 +19,12 @@ exports.constructSigningKeyPair = ({ publicKey, secretKey }) => {
   return {
     type: 'signing',
     publicKey,
-    async sign(message){
+    async sign (message) {
       return sign(message, secretKey)
     },
-    async verify(message, signature){
+    async verify (message, signature) {
       return verify(message, signature, publicKey)
     },
     secretKey // exposed for test
   }
 }
-

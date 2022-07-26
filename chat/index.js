@@ -1,44 +1,44 @@
 
-export const ChatRoom = EventMachine.define({
+// export const ChatRoom = EventMachine.define({
 
-  initialState: {},
+//   initialState: {},
 
-  events: {
-    opened: {
-      schema: {
+//   events: {
+//     opened: {
+//       schema: {
 
-      },
-      create: function open () {
+//       },
+//       create: function open () {
 
-      },
-      validate (state, event) {
-        return state.open
-      },
-      reduce (state, event) {
-        return state
-      }
-    },
-    closed: {
+//       },
+//       validate (state, event) {
+//         return state.open
+//       },
+//       reduce (state, event) {
+//         return state
+//       }
+//     },
+//     closed: {
 
-    },
-    memberAdded: {
+//     },
+//     memberAdded: {
 
-    },
-    memberRemoved: {
+//     },
+//     memberRemoved: {
 
-    }
-  },
+//     }
+//   },
 
-  actions: {
-    async open (opts = {}) {
-      await this.createEvent('opened', {
-        name: opts.name
-      })
-    }
-  }
+//   actions: {
+//     async open (opts = {}) {
+//       await this.createEvent('opened', {
+//         name: opts.name
+//       })
+//     }
+//   }
 
-})
+// })
 
-export const ChatRoomMember = EventMachine.define({
+// export const ChatRoomMember = EventMachine.define({
 
-})
+// })

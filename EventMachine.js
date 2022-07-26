@@ -90,7 +90,6 @@ module.exports = class EventMachine {
     this._state = state
     return state
   }
-
 }
 
 function compileEvents (events) {

@@ -3,9 +3,8 @@ const { test } = require('./helpers/test.js')
 const EventMachine = require('../EventMachine')
 
 class Chest extends EventMachine {
-
-  initialState(){
-    return  {
+  initialState () {
+    return {
       open: false,
       items: []
     }

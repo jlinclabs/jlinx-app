@@ -21,6 +21,8 @@ test('creating a did document', async (t, createClient) => {
   const identifier = await client.identifiers.create({
     ownerSigningKeys
   })
+  t.same(identifier.did, publicKeyToDid(identifier.publicKey))
+  t.same(didToPublicKey(identifier.did), identifier.publicKey)
   t.same(identifier._ledger.doc.ownerSigningKeys, ownerSigningKeys)
   t.ok(identifier.writable)
   const copy = await client.identifiers.get(identifier.id)
@@ -64,12 +66,12 @@ test('creating a did document', async (t, createClient) => {
       controller: 'did:key:z6mk8E2UukTTnT2yxRTXNFXbCxt4TMCKbKgUB1G9WprxZjap',
       publicKeyMultibase: '8E2UukTTnT2yxRTXNFXbCxt4TMCKbKgUB1G9WprxZjap'
     }],
-    services: [],
+    services: []
   }
 
   t.deepEquals(
     identifier.asDidDocument(),
-    expectedDidDocument,
+    expectedDidDocument
   )
 
   t.same(identifier.events, [])
@@ -77,7 +79,7 @@ test('creating a did document', async (t, createClient) => {
   await identifier.addService({
     id: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05',
     type: 'jlinx.profile',
-    serviceEndpoint: 'http://example.com',
+    serviceEndpoint: 'http://example.com'
   })
 
   t.same(identifier.state, {
@@ -85,7 +87,7 @@ test('creating a did document', async (t, createClient) => {
       {
         id: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05',
         type: 'jlinx.profile',
-        serviceEndpoint: 'http://example.com',
+        serviceEndpoint: 'http://example.com'
       }
     ]
   })
@@ -98,10 +100,10 @@ test('creating a did document', async (t, createClient) => {
         {
           id: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05',
           type: 'jlinx.profile',
-          serviceEndpoint: 'http://example.com',
+          serviceEndpoint: 'http://example.com'
         }
       ]
-    },
+    }
   )
 
   t.same(identifier.events, [
@@ -110,7 +112,7 @@ test('creating a did document', async (t, createClient) => {
       service: {
         id: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05',
         serviceEndpoint: 'http://example.com',
-        type: 'jlinx.profile',
+        type: 'jlinx.profile'
       }
     }
   ])
@@ -118,39 +120,38 @@ test('creating a did document', async (t, createClient) => {
   await identifier.addService({
     id: 'c23a5415df0bff723ff056e9832b2034619a25941f27ebea08a5cf044a525133',
     type: 'medicaldata.controller',
-    serviceEndpoint: 'http://kaiser.com',
+    serviceEndpoint: 'http://kaiser.com'
   })
 
   await identifier.addService({
     id: '44a5251332b2034615df0bff723ff056e9837ebea08a5cf09a25941f2c23a541',
     type: 'inbox',
-    serviceEndpoint: 'http://openinbox.com',
+    serviceEndpoint: 'http://openinbox.com'
   })
 
   await identifier.removeService('6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05')
   await identifier.addService({
     id: '37eb6e98ea08a5cf0442034619a25941f2ca5251332b23a5415df0bff72ff053',
     type: 'jlinx.profile',
-    serviceEndpoint: 'http://profilerator.me',
+    serviceEndpoint: 'http://profilerator.me'
   })
-
 
   t.same(identifier.state, {
     services: [
       {
         id: 'c23a5415df0bff723ff056e9832b2034619a25941f27ebea08a5cf044a525133',
         type: 'medicaldata.controller',
-        serviceEndpoint: 'http://kaiser.com',
+        serviceEndpoint: 'http://kaiser.com'
       },
       {
         id: '44a5251332b2034615df0bff723ff056e9837ebea08a5cf09a25941f2c23a541',
         type: 'inbox',
-        serviceEndpoint: 'http://openinbox.com',
+        serviceEndpoint: 'http://openinbox.com'
       },
       {
         id: '37eb6e98ea08a5cf0442034619a25941f2ca5251332b23a5415df0bff72ff053',
         type: 'jlinx.profile',
-        serviceEndpoint: 'http://profilerator.me',
+        serviceEndpoint: 'http://profilerator.me'
       }
     ]
   })
@@ -163,20 +164,20 @@ test('creating a did document', async (t, createClient) => {
         {
           id: 'c23a5415df0bff723ff056e9832b2034619a25941f27ebea08a5cf044a525133',
           type: 'medicaldata.controller',
-          serviceEndpoint: 'http://kaiser.com',
+          serviceEndpoint: 'http://kaiser.com'
         },
         {
           id: '44a5251332b2034615df0bff723ff056e9837ebea08a5cf09a25941f2c23a541',
           type: 'inbox',
-          serviceEndpoint: 'http://openinbox.com',
+          serviceEndpoint: 'http://openinbox.com'
         },
         {
           id: '37eb6e98ea08a5cf0442034619a25941f2ca5251332b23a5415df0bff72ff053',
           type: 'jlinx.profile',
-          serviceEndpoint: 'http://profilerator.me',
+          serviceEndpoint: 'http://profilerator.me'
         }
       ]
-    },
+    }
   )
 
   t.same(identifier.events, [
@@ -217,9 +218,7 @@ test('creating a did document', async (t, createClient) => {
       }
     }
   ])
-
 })
-
 
 // test('did <-> publicKey', async (t, createClient) => {
 //   const client = await createClient()
@@ -253,7 +252,6 @@ test('creating a did document', async (t, createClient) => {
 
 //   const identifierB = await client2.identifiers
 //     .get('did:key:z6mk8E2UukTTnT2yxRTXNFXbCxt4TMCKbKgUB1G9WprxZjap')
-
 
 //   t.end()
 // })
