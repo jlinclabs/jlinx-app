@@ -106,13 +106,114 @@ test('creating a did document', async (t, createClient) => {
 
   t.same(identifier.events, [
     {
-      eventName: 'serviceAdded',
-      payload: {
-        service: {
-          id: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05',
-          serviceEndpoint: 'http://example.com',
+      '@event': 'serviceAdded',
+      service: {
+        id: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05',
+        serviceEndpoint: 'http://example.com',
+        type: 'jlinx.profile',
+      }
+    }
+  ])
+
+  await identifier.addService({
+    id: 'c23a5415df0bff723ff056e9832b2034619a25941f27ebea08a5cf044a525133',
+    type: 'medicaldata.controller',
+    serviceEndpoint: 'http://kaiser.com',
+  })
+
+  await identifier.addService({
+    id: '44a5251332b2034615df0bff723ff056e9837ebea08a5cf09a25941f2c23a541',
+    type: 'inbox',
+    serviceEndpoint: 'http://openinbox.com',
+  })
+
+  await identifier.removeService('6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05')
+  await identifier.addService({
+    id: '37eb6e98ea08a5cf0442034619a25941f2ca5251332b23a5415df0bff72ff053',
+    type: 'jlinx.profile',
+    serviceEndpoint: 'http://profilerator.me',
+  })
+
+
+  t.same(identifier.state, {
+    services: [
+      {
+        id: 'c23a5415df0bff723ff056e9832b2034619a25941f27ebea08a5cf044a525133',
+        type: 'medicaldata.controller',
+        serviceEndpoint: 'http://kaiser.com',
+      },
+      {
+        id: '44a5251332b2034615df0bff723ff056e9837ebea08a5cf09a25941f2c23a541',
+        type: 'inbox',
+        serviceEndpoint: 'http://openinbox.com',
+      },
+      {
+        id: '37eb6e98ea08a5cf0442034619a25941f2ca5251332b23a5415df0bff72ff053',
+        type: 'jlinx.profile',
+        serviceEndpoint: 'http://profilerator.me',
+      }
+    ]
+  })
+
+  t.deepEquals(
+    identifier.asDidDocument(),
+    {
+      ...expectedDidDocument,
+      services: [
+        {
+          id: 'c23a5415df0bff723ff056e9832b2034619a25941f27ebea08a5cf044a525133',
+          type: 'medicaldata.controller',
+          serviceEndpoint: 'http://kaiser.com',
+        },
+        {
+          id: '44a5251332b2034615df0bff723ff056e9837ebea08a5cf09a25941f2c23a541',
+          type: 'inbox',
+          serviceEndpoint: 'http://openinbox.com',
+        },
+        {
+          id: '37eb6e98ea08a5cf0442034619a25941f2ca5251332b23a5415df0bff72ff053',
           type: 'jlinx.profile',
+          serviceEndpoint: 'http://profilerator.me',
         }
+      ]
+    },
+  )
+
+  t.same(identifier.events, [
+    {
+      '@event': 'serviceAdded',
+      service: {
+        id: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05',
+        serviceEndpoint: 'http://example.com',
+        type: 'jlinx.profile'
+      }
+    },
+    {
+      '@event': 'serviceAdded',
+      service: {
+        id: 'c23a5415df0bff723ff056e9832b2034619a25941f27ebea08a5cf044a525133',
+        serviceEndpoint: 'http://kaiser.com',
+        type: 'medicaldata.controller'
+      }
+    },
+    {
+      '@event': 'serviceAdded',
+      service: {
+        id: '44a5251332b2034615df0bff723ff056e9837ebea08a5cf09a25941f2c23a541',
+        serviceEndpoint: 'http://openinbox.com',
+        type: 'inbox'
+      }
+    },
+    {
+      '@event': 'serviceRemoved',
+      serviceId: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05'
+    },
+    {
+      '@event': 'serviceAdded',
+      service: {
+        id: '37eb6e98ea08a5cf0442034619a25941f2ca5251332b23a5415df0bff72ff053',
+        serviceEndpoint: 'http://profilerator.me',
+        type: 'jlinx.profile'
       }
     }
   ])

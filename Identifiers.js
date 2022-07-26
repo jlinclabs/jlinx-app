@@ -83,7 +83,7 @@ class Identifier extends EventMachine {
   }
 
   async removeService (serviceId) {
-    await this.appendEvent('removeAdded', { serviceId })
+    await this.appendEvent('serviceRemoved', { serviceId })
   }
 
   asDidDocument () {
@@ -121,7 +121,7 @@ Identifier.events = {
       if (!state.services) { return 'cannot add item to closed chest' }
       if (
         state.services.find(services =>
-          services.id === event.services.id
+          services.id === event.service.id
         )
       ){
         return `service already referenced by did document: ${event.services.id}`
@@ -135,7 +135,7 @@ Identifier.events = {
     }
   },
 
-  seriviceRemoved: {
+  serviceRemoved: {
     schema: {
       type: 'object',
       properties: {

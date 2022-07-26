@@ -233,45 +233,39 @@ test('Chest as EventMachine', async (t, createClient) => {
 
   t.same(chest1.events, [
     {
-      eventName: 'opened'
+      '@event': 'opened'
     },
     {
-      eventName: 'itemAdded',
-      payload: {
-        item: {
-          desc: 'Iron Sword',
-          id: 'sword123456',
-          magic: false
-        }
+      '@event': 'itemAdded',
+      item: {
+        desc: 'Iron Sword',
+        id: 'sword123456',
+        magic: false
       }
     },
     {
-      eventName: 'closed'
+      '@event': 'closed'
     },
     {
-      eventName: 'opened'
+      '@event': 'opened'
     },
     {
-      eventName: 'itemAdded',
-      payload: {
-        item: {
-          desc: 'Iron Sheild',
-          id: 'shield9876',
-          magic: false
-        }
+      '@event': 'itemAdded',
+      item: {
+        desc: 'Iron Sheild',
+        id: 'shield9876',
+        magic: false
       }
     },
     {
-      eventName: 'closed'
+      '@event': 'closed'
     },
     {
-      eventName: 'opened'
+      '@event': 'opened'
     },
     {
-      eventName: 'itemRemoved',
-      payload: {
-        itemId: 'shield9876'
-      }
+      '@event': 'itemRemoved',
+      itemId: 'shield9876'
     }
   ])
 })

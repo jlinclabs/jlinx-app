@@ -45,27 +45,6 @@ module.exports = class EventMachine {
     return this.constructor.events[eventName]
   }
 
-  async update () {
-    await this._ledger.update()
-    const [, ...events] = await this._ledger.entries()
-    let state = this.initialState()
-
-    this._events = [...events]
-
-    while (events.length > 0) {
-      const event = events.shift()
-      const eventSpec = this._getEventSpec(event.eventName)
-      if (!eventSpec) {
-        console.error('\n\nBAD EVENT!\nignoring unexpected event', event, '\n\n')
-        continue
-      }
-      state = eventSpec.apply(state, event.payload)
-    }
-
-    this._state = state
-    return state
-  }
-
   async appendEvent (eventName, payload) {
     const eventSpec = this._getEventSpec(eventName)
     if (!eventSpec) throw new Error(`invalid event "${eventName}"`)
@@ -86,10 +65,32 @@ module.exports = class EventMachine {
       if (errorMessage) throw new Error(`${errorMessage}`)
     }
     await this._ledger.append([
-      { eventName, payload }
+      { ...payload, '@event': eventName }
     ])
     await this.update()
   }
+
+  async update () {
+    await this._ledger.update()
+    const [, ...events] = await this._ledger.entries()
+    let state = this.initialState()
+
+    this._events = [...events]
+
+    while (events.length > 0) {
+      const { '@event': eventName, ...payload } = events.shift()
+      const eventSpec = this._getEventSpec(eventName)
+      if (!eventSpec) {
+        console.error('\n\nBAD EVENT!\nignoring unexpected event', eventName, '\n\n')
+        continue
+      }
+      state = eventSpec.apply(state, payload)
+    }
+
+    this._state = state
+    return state
+  }
+
 }
 
 function compileEvents (events) {
