@@ -48,7 +48,7 @@ module.exports = class EventMachine {
   async update () {
     await this._ledger.update()
     const [, ...events] = await this._ledger.entries()
-    let state = { ...this.constructor.initialState } // TODO deepcopy
+    let state = this.initialState()
 
     this._events = [...events]
 
