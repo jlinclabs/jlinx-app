@@ -1,5 +1,9 @@
 const Debug = require('debug')
 const b4a = require('b4a')
+const {
+  compileSchemaSerializer,
+  compileSchemaParser,
+} = require('./schema')
 const Ledger = require('./Ledger')
 
 const debug = Debug('jlinx:client:identifiers')
