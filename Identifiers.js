@@ -5,7 +5,7 @@ const {
   keyToString,
   keyToBuffer
 } = require('jlinx-util')
-const Ledger = require('./Ledger')
+const EventMachine = require('./EventMachine')
 
 const debug = Debug('jlinx:client:identifiers')
 
@@ -24,36 +24,28 @@ module.exports = class Identifiers {
       ownerSigningKeys
     })
     debug('create', { doc })
-    return await Identitfier.create(doc, this)
+    return await Identifier.create(doc, this)
   }
 
-  async get (did) {
-    debug('get', { did })
-    const publicKey = didToPublicKey(did)
-    debug('get', { publicKey })
-    const ownerSigningKeys = await this.keys.get(publicKey)
-    debug('get', { ownerSigningKeys })
-    // return new Identifier(ownerSigningKeys || { publicKey })
+  async get (id) {
+    debug('get', { id })
+    const doc = await this.jlinx.get(id)
+    debug('get', { doc })
+    return await Identifier.open(doc, this)
   }
 }
 
 
-// class IdentitfierEvents extends EventMachine {
+// class IdentifierEvents extends EventMachine {
 //   static events = {
 
 //   }
 // }
 
-class Identitfier {
-  static async create (doc, identifiers) {
-    const identitfier = new Identitfier(doc, identifiers)
-    await identitfier._ledger.init()
-    await identitfier.ready()
-    return identitfier
-  }
+class Identifier extends EventMachine {
 
   constructor (doc, identifiers) {
-    this._events = new IdentitfierEvents(doc, eventsSpec)
+    super(doc)
     this._identifiers = identifiers
     const { publicKey } = this._ledger.doc.ownerSigningKeys
     this._signingKey = keyToString(publicKey)
@@ -66,7 +58,14 @@ class Identitfier {
   get writable () { return this._ledger.writable }
   get did () { return this._did }
   get signingKey () { return this._signingKey }
-  get services () { return this._value?.services }
+
+  initialState(){
+    return {
+      services: []
+    }
+  }
+
+  get services () { return this.state?.services }
 
   [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
     let indent = ''
@@ -80,83 +79,83 @@ class Identitfier {
       indent + ')'
   }
 
-  async ready () {
-    await this.update()
-  }
-
-  async events () {
-    const events = await this._ledger.entries()
-    return events.slice(1)
-  }
-
-  async update () {
-    await this._ledger.update()
-    const value = {
-      did: this.did,
-      services: {},
-    }
-    let events = await this.events()
-    while (events.length > 0) {
-      const event = events.shift()
-      if (event.event === 'serviceAdded') {
-        services[event.service.id] = event.service
-      }
-
-      if (event.event === 'serviceRemoved') {
-        delete services[event.serviceId]
-      }
-
-      else {
-        console.warn('ignoring event', event)
-      }
-    }
-    this._value = value
-  }
-
-
   async addService (service) {
-    await this._ledger.append([
-      {
-        event: 'offered',
-        offerer,
-        contractUrl,
-        signatureDropoffUrl,
-        jlinxHost: this._contracts.jlinx.host.url
-      }
-    ])
-    await this.update()
+    await this.appendEvent('serviceAdded', { service })
   }
 
-  async removeService () {
-
+  async removeService (serviceId) {
+    await this.appendEvent('removeAdded', { serviceId })
   }
-  // async offerContract (options = {}) {
-  //   const {
-  //     offerer,
-  //     contractUrl,
-  //     signatureDropoffUrl
-  //   } = options
-  //   if (!offerer) throw new Error('offerer is required')
-  //   if (!contractUrl) throw new Error('contractUrl is required')
-  //   if (this.length > 0) throw new Error('already offered')
-  //   await this._ledger.append([
-  //     {
-  //       event: 'offered',
-  //       offerer,
-  //       contractUrl,
-  //       signatureDropoffUrl,
-  //       jlinxHost: this._contracts.jlinx.host.url
-  //     }
-  //   ])
-  //   await this.update()
-  // }
 
-  async didDocument () {
-    await this.update()
+  toJSON () {
     return signingKeyToDidDocument(this.signingKey, {
       services: this.services,
     })
   }
+}
+
+Identifier.initialState = {
+  services: [],
+}
+
+Identifier.events = {
+
+  seriviceAdded: {
+    schema: {
+      type: 'object',
+      properties: {
+        service: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' }, //"did:example:123#linked-domain",
+            type: { type: 'string' }, // "LinkedDomains",
+            serviceEndpoint: { type: 'string' }, // "https://bar.example.com"
+          },
+          required: ['id', 'type', 'serviceEndpoint'],
+          additionalProperties: true
+        }
+      },
+      required: ['service'],
+      additionalProperties: false
+    },
+    validate (state, event) {
+      if (!state.services) { return 'cannot add item to closed chest' }
+      if (
+        state.services.find(services =>
+          services.id === event.services.id
+        )
+      ){
+        return `service already referenced by did document: ${event.services.id}`
+      }
+    },
+    apply (state, event) {
+      return {
+        ...state,
+        services: [...state.services, event.service]
+      }
+    }
+  },
+
+  seriviceRemoved: {
+    schema: {
+      type: 'object',
+      properties: {
+        serviceId: { type: 'string' }
+      },
+      required: ['serviceId'],
+      additionalProperties: false
+    },
+    validate (state, { serviceId }) {
+      const service = state.services.find(service => service.id === serviceId)
+      if (!service) { return `service is references by the did document: ${serviceId}` }
+    },
+    apply (state, { serviceId }) {
+      return {
+        ...state,
+        services: state.services.filter(service => service.id !== serviceId)
+      }
+    }
+  },
 }
 
 function signingKeyToDidDocument (publicKey) {

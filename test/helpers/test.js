@@ -1,5 +1,4 @@
 const Debug = require('debug')
-// const tape =
 const tape = require('tape-promise').default(require('tape'))
 const tmp = require('tmp-promise')
 const fs = require('node:fs/promises')

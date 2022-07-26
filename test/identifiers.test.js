@@ -1,45 +1,38 @@
 const { test } = require('./helpers/test.js')
+const { createSigningKeyPair } = require('./helpers/crypto.js')
 
 const {
   didToPublicKey,
   publicKeyToDid
 } = require('../Identifiers')
 
-test('did <-> publicKey', async (t, createClient) => {
-  const client = await createClient()
-  const { did } = await client.identifiers.createDidKey()
-  const publicKey = didToPublicKey(did)
-  t.equal(did, publicKeyToDid(publicKey))
-  t.equal(
-    publicKey.toString('hex'),
-    didToPublicKey(did).toString('hex')
-  )
-})
+test('creating a did document', async (t, createClient) => {
+  const client = await createClient(t.jlinxHosts[0].url)
 
-test('jlinx.identifiers.createDidKey', async (t, createClient) => {
-  const client1 = await createClient(t.jlinxHosts[0].url)
-  const client2 = await createClient(t.jlinxHosts[1].url)
-  t.notEquals(client1.host.url, client2.host.url)
-
-  const identifierA = await client1.identifiers.createDidKey()
-  t.equals(identifierA.constructor.name, 'Identifier')
-  t.ok(identifierA.did.startsWith('did:key:'))
-  t.ok(identifierA.canSign)
-
-  const identifierA1 = await client2.identifiers.get(identifierA.did)
-  t.equal(identifierA1.did, identifierA.did)
-  t.ok(!identifierA1.canSign)
-
-  t.equals(
-    identifierA.publicKey.toString('hex'),
-    identifierA1.publicKey.toString('hex')
+  const ownerSigningKeys = await createSigningKeyPair('identifiers_test')
+  t.same(
+    ownerSigningKeys.publicKey.toString('hex'),
+    '6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1'
   )
 
-  const identifierB = await client2.identifiers
-    .get('did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ')
+  const didDocument = await client.identifiers.create({
+    ownerSigningKeys
+  })
+  t.same(didDocument._ledger.doc.ownerSigningKeys, ownerSigningKeys)
+  t.ok(didDocument.writable)
+  console.log(didDocument)
+  const copy = await client.identifiers.get(didDocument.id)
+  t.equal(didDocument.id, copy.id)
+  t.equal(didDocument.host, copy.host)
+  t.equal(didDocument.did, copy.did)
+  t.equal(didDocument.signingKey, copy.signingKey)
+
+  console.log(didDocument.state)
+  // console.log(await didDocument.didDocument())
+
 
   t.deepEquals(
-    identifierB.didDocument,
+    didDocument.toJSON(),
     {
       '@context': [
         'https://www.w3.org/ns/did/v1',
@@ -73,20 +66,42 @@ test('jlinx.identifiers.createDidKey', async (t, createClient) => {
       }]
     }
   )
-
-  t.end()
 })
 
 
-test.only('jlinx.identifiers.createDidDocument', async (t, createClient) => {
-  const client = await createClient(t.jlinxHosts[0].url)
+// test('did <-> publicKey', async (t, createClient) => {
+//   const client = await createClient()
+//   const { did } = await client.identifiers.createDidKey()
+//   const publicKey = didToPublicKey(did)
+//   t.equal(did, publicKeyToDid(publicKey))
+//   t.equal(
+//     publicKey.toString('hex'),
+//     didToPublicKey(did).toString('hex')
+//   )
+// })
 
-  const ownerSigningKeys = await client.vault.keys.createSigningKeyPair()
-  const didDocument = await client.identifiers.create({
-    ownerSigningKeys
-  })
-  t.same(didDocument._ledger.doc.ownerSigningKeys, ownerSigningKeys)
-  console.log(didDocument)
-  console.log(didDocument.value)
-  console.log(await didDocument.didDocument())
-})
+// test('jlinx.identifiers.createDidKey', async (t, createClient) => {
+//   const client1 = await createClient(t.jlinxHosts[0].url)
+//   const client2 = await createClient(t.jlinxHosts[1].url)
+//   t.notEquals(client1.host.url, client2.host.url)
+
+//   const identifierA = await client1.identifiers.createDidKey()
+//   t.equals(identifierA.constructor.name, 'Identifier')
+//   t.ok(identifierA.did.startsWith('did:key:'))
+//   t.ok(identifierA.canSign)
+
+//   const identifierA1 = await client2.identifiers.get(identifierA.did)
+//   t.equal(identifierA1.did, identifierA.did)
+//   t.ok(!identifierA1.canSign)
+
+//   t.equals(
+//     identifierA.publicKey.toString('hex'),
+//     identifierA1.publicKey.toString('hex')
+//   )
+
+//   const identifierB = await client2.identifiers
+//     .get('did:key:z6mkCv9axPQLFr1x8MjRohA4ftmUAqbvytLBT4V12EeGJGYJ')
+
+
+//   t.end()
+// })

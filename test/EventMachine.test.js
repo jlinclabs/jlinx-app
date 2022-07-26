@@ -4,6 +4,13 @@ const EventMachine = require('../EventMachine')
 
 class Chest extends EventMachine {
 
+  initialState(){
+    return  {
+      open: false,
+      items: []
+    }
+  }
+
   async open (...__passingJustToTestErrorCase) {
     await this.appendEvent('opened', ...__passingJustToTestErrorCase)
   }
@@ -21,28 +28,23 @@ class Chest extends EventMachine {
   }
 }
 
-Chest.initialState = {
-  open: false,
-  items: [],
-}
-
 Chest.events = {
   opened: {
     schema: null,
     validate (state) {
-      if (state.open) return `cannot open already open chest`
+      if (state.open) return 'cannot open already open chest'
     },
-    apply (state){
-      return {...state, open: true}
+    apply (state) {
+      return { ...state, open: true }
     }
   },
   closed: {
     schema: null,
     validate (state) {
-      if (!state.open) return `cannot close unopen chest`
+      if (!state.open) return 'cannot close unopen chest'
     },
-    apply (state){
-      return {...state, open: false}
+    apply (state) {
+      return { ...state, open: false }
     }
   },
   itemAdded: {
@@ -52,26 +54,23 @@ Chest.events = {
         item: {
           type: 'object',
           properties: {
-            id: {type: 'string'},
-            desc: {type: 'string'},
-            magic: {type: 'boolean'},
+            id: { type: 'string' },
+            desc: { type: 'string' },
+            magic: { type: 'boolean' }
           },
           required: ['id', 'desc'],
-          additionalProperties: true,
+          additionalProperties: true
         }
       },
       required: ['item'],
-      additionalProperties: false,
+      additionalProperties: false
     },
-    validate (state, event){
-      if (!state.open)
-        return `cannot add item to closed chest`
-
-      if (state.items.find(item => item.id === event.item.id))
-        return `item is already in the chest`
+    validate (state, event) {
+      if (!state.open) { return 'cannot add item to closed chest' }
+      if (state.items.find(item => item.id === event.item.id)) { return 'item is already in the chest' }
     },
-    apply (state, event){
-      state = {...state}
+    apply (state, event) {
+      state = { ...state }
       state.items = [...state.items]
       state.items.push(event.item)
       return state
@@ -81,24 +80,21 @@ Chest.events = {
     schema: {
       type: 'object',
       properties: {
-        itemId: {type: 'string'},
+        itemId: { type: 'string' }
       },
       required: ['itemId'],
-      additionalProperties: false,
+      additionalProperties: false
     },
-    validate (state, event){
-      if (!state.open)
-        return `cannot remove item from closed chest`
-      if (!state.items.find(item => item.id === event.itemId))
-        return `item is not in the chest`
-
+    validate (state, event) {
+      if (!state.open) { return 'cannot remove item from closed chest' }
+      if (!state.items.find(item => item.id === event.itemId)) { return 'item is not in the chest' }
     },
-    apply (state, event){
-      state = {...state}
+    apply (state, event) {
+      state = { ...state }
       state.items = state.items.filter(item => item.id !== event.itemId)
       return state
     }
-  },
+  }
 }
 
 test('Chest as EventMachine', async (t, createClient) => {
@@ -108,7 +104,7 @@ test('Chest as EventMachine', async (t, createClient) => {
 
   t.same(chest1.state, {
     open: false,
-    items: [],
+    items: []
   })
 
   await t.rejects(
@@ -122,20 +118,20 @@ test('Chest as EventMachine', async (t, createClient) => {
 
   t.same(chest1.state, {
     open: true,
-    items: [],
+    items: []
   })
 
   await t.rejects(
     async () => {
       await chest1.addItem()
     },
-    { message: `invalid event payload: must have required property 'item'` }
+    { message: 'invalid event payload: must have required property \'item\'' }
   )
 
   await chest1.addItem({
     id: 'sword123456',
     desc: 'Iron Sword',
-    magic: false,
+    magic: false
   })
 
   t.same(chest1.state, {
@@ -144,9 +140,9 @@ test('Chest as EventMachine', async (t, createClient) => {
       {
         id: 'sword123456',
         desc: 'Iron Sword',
-        magic: false,
+        magic: false
       }
-    ],
+    ]
   })
 
   await chest1.close()
@@ -157,9 +153,9 @@ test('Chest as EventMachine', async (t, createClient) => {
       {
         id: 'sword123456',
         desc: 'Iron Sword',
-        magic: false,
+        magic: false
       }
-    ],
+    ]
   })
 
   await t.rejects(
@@ -167,7 +163,7 @@ test('Chest as EventMachine', async (t, createClient) => {
       await chest1.addItem({
         id: 'shield9876',
         desc: 'Iron Sheild',
-        magic: false,
+        magic: false
       })
     },
     { message: 'cannot add item to closed chest' }
@@ -179,21 +175,21 @@ test('Chest as EventMachine', async (t, createClient) => {
     async () => {
       await chest1.addItem({})
     },
-    { message: `invalid event payload: /item must have required property 'id'` }
+    { message: 'invalid event payload: /item must have required property \'id\'' }
   )
   await t.rejects(
     async () => {
       await chest1.addItem({
-        id: 'shield9876',
+        id: 'shield9876'
       })
     },
-    { message: `invalid event payload: /item must have required property 'desc'` }
+    { message: 'invalid event payload: /item must have required property \'desc\'' }
   )
 
   await chest1.addItem({
     id: 'shield9876',
     desc: 'Iron Sheild',
-    magic: false,
+    magic: false
   })
 
   t.same(chest1.state, {
@@ -202,14 +198,14 @@ test('Chest as EventMachine', async (t, createClient) => {
       {
         id: 'sword123456',
         desc: 'Iron Sword',
-        magic: false,
+        magic: false
       },
       {
         id: 'shield9876',
         desc: 'Iron Sheild',
-        magic: false,
+        magic: false
       }
-    ],
+    ]
   })
 
   await chest1.close()
@@ -230,9 +226,9 @@ test('Chest as EventMachine', async (t, createClient) => {
       {
         id: 'sword123456',
         desc: 'Iron Sword',
-        magic: false,
-      },
-    ],
+        magic: false
+      }
+    ]
   })
 
   t.same(chest1.events, [
@@ -276,7 +272,6 @@ test('Chest as EventMachine', async (t, createClient) => {
       payload: {
         itemId: 'shield9876'
       }
-    },
+    }
   ])
-
 })
