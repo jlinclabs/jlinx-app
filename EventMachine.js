@@ -1,14 +1,18 @@
 const Debug = require('debug')
 const b4a = require('b4a')
 const {
-  compileSchemaSerializer,
-  compileSchemaParser,
+  compileSchemaValidator,
 } = require('./schema')
 const Ledger = require('./Ledger')
 
 const debug = Debug('jlinx:client:identifiers')
 
 module.exports = class EventMachine {
+
+  static set events (events) {
+    this._events = compileEvents(events)
+  }
+  static get events(){ return this._events }
 
   static async create (doc) {
     const i = new this(doc)
@@ -64,9 +68,14 @@ module.exports = class EventMachine {
   }
 
   async appendEvent(eventName, payload){
-    // TODO validate event
     const eventSpec = this._getEventSpec(eventName)
     if (!eventSpec) throw new Error(`invalid event "${eventName}"`)
+    if (!eventSpec.schemaValidate(payload)){
+      const errors = eventSpec.schemaValidate.errors
+      // console.error(`invalid event payload`, {eventName, payload, errors})
+      throw new Error(`invalid event payload`)
+      // throw new Error(`invalid event payload: ${JSON.stringify(errors)}`)
+    }
     if (eventSpec.validate) {
       // TODO: consider this.update() here?
       const errorMessage = eventSpec.validate(this.state, payload)
@@ -77,4 +86,37 @@ module.exports = class EventMachine {
     ])
     await this.update()
   }
+}
+
+
+function compileEvents(events){
+  const cEvents = {}
+  for (const eventName in events){
+    const spec = cEvents[eventName] = {...events[eventName]}
+    try{
+      spec.schemaValidate = spec.schema === null
+        ? makeNullSchemaValidator()
+        : compileSchemaValidator(spec.schema)
+    }catch(error){
+      console.error(spec)
+      throw new Error(`invalid EventMachine schema: ${error}`)
+    }
+    cEvents[eventName] = spec
+  }
+  return cEvents
+}
+
+
+function makeNullSchemaValidator(){
+  function nullSchemaValidator(value){
+    if (
+      typeof value === 'undefined' ||
+      value === null
+    ) return true
+    nullSchemaValidator.errors = [
+      {}
+    ]
+    return false
+  }
+  return nullSchemaValidator
 }

@@ -2,66 +2,10 @@ const { test } = require('./helpers/test.js')
 
 const EventMachine = require('../EventMachine')
 
-console.log({ EventMachine })
-
 class Chest extends EventMachine {
-  static initialState = {
-    open: false,
-    items: [],
-  }
 
-  static events = {
-    opened: {
-      schema: {},
-      apply (state, event){
-        return {...state, open: true}
-      }
-    },
-    closed: {
-      schema: {},
-      apply (state, event){
-        return {...state, open: false}
-      }
-    },
-    itemAdded: {
-      schema: {},
-      validate (state, event){
-        if (!state.open)
-          return `cannot add item to closed chest`
-        if (state.items.find(item => item.id === event.item.id))
-          return `item is already in the chest`
-      },
-      apply (state, event){
-        state = {...state}
-        state.items = [...state.items]
-        state.items.push(event.item)
-        return state
-      }
-    },
-    itemRemoved: {
-      schema: {
-        itemId: {
-          type: 'String',
-          required: true,
-        }
-      },
-      validate (state, event){
-        if (!state.open)
-          return `cannot remove item from closed chest`
-        if (!state.items.find(item => item.id === event.itemId))
-          return `item is not in the chest`
-
-      },
-      apply (state, event){
-        state = {...state}
-        state.items = state.items.filter(item => item.id !== event.itemId)
-        return state
-      }
-    },
-  }
-
-  async open () {
-    await this.appendEvent('opened')
+  async open (...__passingJustToTestErrorCase) {
+    await this.appendEvent('opened', ...__passingJustToTestErrorCase)
   }
 
   async close () {
@@ -77,6 +21,86 @@ class Chest extends EventMachine {
   }
 }
 
+Chest.initialState = {
+  open: false,
+  items: [],
+}
+
+Chest.events = {
+  opened: {
+    schema: null,
+    validate (state) {
+      if (state.open) return `cannot open already open chest`
+    },
+    apply (state){
+      return {...state, open: true}
+    }
+  },
+  closed: {
+    schema: null,
+    validate (state) {
+      if (!state.open) return `cannot close unopen chest`
+    },
+    apply (state){
+      return {...state, open: false}
+    }
+  },
+  itemAdded: {
+    schema: {
+      type: 'object',
+      properties: {
+        item: {
+          type: 'object',
+          properties: {
+            id: {type: 'string'},
+            desc: {type: 'string'},
+            magic: {type: 'boolean'},
+          },
+          required: ['id', 'desc'],
+          additionalProperties: true,
+        }
+      },
+      required: ['item'],
+      additionalProperties: false,
+    },
+    validate (state, event){
+      if (!state.open)
+        return `cannot add item to closed chest`
+
+      if (state.items.find(item => item.id === event.item.id))
+        return `item is already in the chest`
+    },
+    apply (state, event){
+      state = {...state}
+      state.items = [...state.items]
+      state.items.push(event.item)
+      return state
+    }
+  },
+  itemRemoved: {
+    schema: {
+      type: 'object',
+      properties: {
+        itemId: {type: 'string'},
+      },
+      required: ['itemId'],
+      additionalProperties: false,
+    },
+    validate (state, event){
+      if (!state.open)
+        return `cannot remove item from closed chest`
+      if (!state.items.find(item => item.id === event.itemId))
+        return `item is not in the chest`
+
+    },
+    apply (state, event){
+      state = {...state}
+      state.items = state.items.filter(item => item.id !== event.itemId)
+      return state
+    }
+  },
+}
+
 test('Chest as EventMachine', async (t, createClient) => {
   const client = await createClient()
   const doc = await client.create()
@@ -87,12 +111,28 @@ test('Chest as EventMachine', async (t, createClient) => {
     items: [],
   })
 
+
+  await t.rejects(
+    async () => {
+      await chest1.open({ bad: 'payload' })
+    },
+    { message: 'invalid event payload' }
+  )
+
+
   await chest1.open()
 
   t.same(chest1.state, {
     open: true,
     items: [],
   })
+
+  await t.rejects(
+    async () => {
+      await chest1.addItem()
+    },
+    { message: 'invalid event payload' }
+  )
 
   await chest1.addItem({
     id: 'sword123456',
@@ -163,9 +203,7 @@ test('Chest as EventMachine', async (t, createClient) => {
 
   await t.rejects(
     async () => {
-      await chest1.removeItem({
-        id: 'shield9876',
-      })
+      await chest1.removeItem('shield9876')
     },
     { message: 'cannot remove item from closed chest' }
   )
@@ -173,7 +211,6 @@ test('Chest as EventMachine', async (t, createClient) => {
   await chest1.open()
   await chest1.removeItem('shield9876')
 
-  console.log(chest1.events)
   t.same(chest1.state, {
     open: true,
     items: [
