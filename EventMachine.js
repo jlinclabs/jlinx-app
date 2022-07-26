@@ -73,7 +73,12 @@ module.exports = class EventMachine {
     if (!eventSpec.schemaValidate(payload)){
       const errors = eventSpec.schemaValidate.errors
       // console.error(`invalid event payload`, {eventName, payload, errors})
-      throw new Error(`invalid event payload`)
+      throw new Error(
+        `invalid event payload: ` +
+        errors.map(e =>
+          (e.instancePath ? `${e.instancePath} ` : '') + e.message
+        ).join(', ')
+      )
       // throw new Error(`invalid event payload: ${JSON.stringify(errors)}`)
     }
     if (eventSpec.validate) {
@@ -98,7 +103,6 @@ function compileEvents(events){
         ? makeNullSchemaValidator()
         : compileSchemaValidator(spec.schema)
     }catch(error){
-      console.error(spec)
       throw new Error(`invalid EventMachine schema: ${error}`)
     }
     cEvents[eventName] = spec
@@ -114,7 +118,9 @@ function makeNullSchemaValidator(){
       value === null
     ) return true
     nullSchemaValidator.errors = [
-      {}
+      {
+        message: 'must be null or undefined'
+      }
     ]
     return false
   }

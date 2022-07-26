@@ -111,14 +111,12 @@ test('Chest as EventMachine', async (t, createClient) => {
     items: [],
   })
 
-
   await t.rejects(
     async () => {
       await chest1.open({ bad: 'payload' })
     },
-    { message: 'invalid event payload' }
+    { message: 'invalid event payload: must be null or undefined' }
   )
-
 
   await chest1.open()
 
@@ -131,7 +129,7 @@ test('Chest as EventMachine', async (t, createClient) => {
     async () => {
       await chest1.addItem()
     },
-    { message: 'invalid event payload' }
+    { message: `invalid event payload: must have required property 'item'` }
   )
 
   await chest1.addItem({
@@ -176,12 +174,27 @@ test('Chest as EventMachine', async (t, createClient) => {
   )
 
   await chest1.open()
+
+  await t.rejects(
+    async () => {
+      await chest1.addItem({})
+    },
+    { message: `invalid event payload: /item must have required property 'id'` }
+  )
+  await t.rejects(
+    async () => {
+      await chest1.addItem({
+        id: 'shield9876',
+      })
+    },
+    { message: `invalid event payload: /item must have required property 'desc'` }
+  )
+
   await chest1.addItem({
     id: 'shield9876',
     desc: 'Iron Sheild',
     magic: false,
   })
-
 
   t.same(chest1.state, {
     open: true,
@@ -222,11 +235,48 @@ test('Chest as EventMachine', async (t, createClient) => {
     ],
   })
 
+  t.same(chest1.events, [
+    {
+      eventName: 'opened'
+    },
+    {
+      eventName: 'itemAdded',
+      payload: {
+        item: {
+          desc: 'Iron Sword',
+          id: 'sword123456',
+          magic: false
+        }
+      }
+    },
+    {
+      eventName: 'closed'
+    },
+    {
+      eventName: 'opened'
+    },
+    {
+      eventName: 'itemAdded',
+      payload: {
+        item: {
+          desc: 'Iron Sheild',
+          id: 'shield9876',
+          magic: false
+        }
+      }
+    },
+    {
+      eventName: 'closed'
+    },
+    {
+      eventName: 'opened'
+    },
+    {
+      eventName: 'itemRemoved',
+      payload: {
+        itemId: 'shield9876'
+      }
+    },
+  ])
 
-  // const publicKey = didToPublicKey(did)
-  // t.equal(did, publicKeyToDid(publicKey))
-  // t.equal(
-  //   publicKey.toString('hex'),
-  //   didToPublicKey(did).toString('hex')
-  // )
 })
