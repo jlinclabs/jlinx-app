@@ -7,11 +7,15 @@ const {
 } = require('jlinx-util')
 
 exports.createSigningKeyPair = (seed) => {
-  if (!seed) seed = (new Error).stack.split('\n')[2]
+  if (!seed) seed = `${Math.random()}`
   if (!b4a.isBuffer(seed)) seed = b4a.from(seed)
   const _seed = b4a.allocUnsafe(32)
   sodium.crypto_generichash_batch(_seed, [seed])
   const { publicKey, secretKey } = createSigningKeyPair(_seed)
+  return exports.constructSigningKeyPair({ publicKey, secretKey })
+}
+
+exports.constructSigningKeyPair = ({ publicKey, secretKey }) => {
   return {
     type: 'signing',
     publicKey,
@@ -20,7 +24,8 @@ exports.createSigningKeyPair = (seed) => {
     },
     async verify(message, signature){
       return verify(message, signature, publicKey)
-    }
+    },
+    secretKey // exposed for test
   }
 }
 

@@ -53,7 +53,6 @@ class Identifier extends EventMachine {
   }
 
   get id () { return this._ledger.id }
-  get value () { return this._value }
   get host () { return this._ledger._header?.host }
   get writable () { return this._ledger.writable }
   get did () { return this._did }
@@ -87,7 +86,7 @@ class Identifier extends EventMachine {
     await this.appendEvent('removeAdded', { serviceId })
   }
 
-  toJSON () {
+  asDidDocument () {
     return signingKeyToDidDocument(this.signingKey, {
       services: this.services,
     })
@@ -100,7 +99,7 @@ Identifier.initialState = {
 
 Identifier.events = {
 
-  seriviceAdded: {
+  serviceAdded: {
     schema: {
       type: 'object',
       properties: {
