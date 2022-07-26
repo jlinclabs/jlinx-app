@@ -76,3 +76,17 @@ test('jlinx.identifiers.createDidKey', async (t, createClient) => {
 
   t.end()
 })
+
+
+test.only('jlinx.identifiers.createDidDocument', async (t, createClient) => {
+  const client = await createClient(t.jlinxHosts[0].url)
+
+  const ownerSigningKeys = await client.vault.keys.createSigningKeyPair()
+  const didDocument = await client.identifiers.create({
+    ownerSigningKeys
+  })
+  t.same(didDocument._ledger.doc.ownerSigningKeys, ownerSigningKeys)
+  console.log(didDocument)
+  console.log(didDocument.value)
+  console.log(await didDocument.didDocument())
+})

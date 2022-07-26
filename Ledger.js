@@ -33,7 +33,9 @@ module.exports = class Ledger {
   async header () {
     if (!this._header) {
       this._header = await this.doc.header()
+      console.log('this._header', this._header)
       if (
+        this._header.length > 0 &&
         this.doc.ownerSigningKeys &&
         !b4a.equals(
           keyToBuffer(this._header.signingKey),

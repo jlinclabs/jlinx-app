@@ -35,6 +35,7 @@
     "jlinx-host": "github:jlinclabs/jlinx-host#862df98db65d5dca0d4e8b0558562ca1a6c5b05e",
     "standard": "^17.0.0",
     "tape": "^5.5.3",
+    "tape-promise": "^4.0.0",
     "tmp-promise": "^3.0.3"
   }
 }
