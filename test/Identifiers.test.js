@@ -20,8 +20,9 @@ test('creating a did document', async (t, createClient) => {
   const identifier = await client.identifiers.create({
     ownerSigningKeys
   })
-  t.same(identifier.did, publicKeyToDid(identifier.publicKey))
-  t.same(didToPublicKey(identifier.did), identifier.publicKey)
+
+  t.same(identifier.did, publicKeyToDid(identifier._header.signingKey))
+  // t.same(didToPublicKey(identifier.did), identifier._header.signingKey)
   t.same(identifier._ledger.doc.ownerSigningKeys, ownerSigningKeys)
   t.ok(identifier.writable)
   const copy = await client.identifiers.get(identifier.id)

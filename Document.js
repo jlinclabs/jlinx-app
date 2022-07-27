@@ -22,9 +22,6 @@ module.exports = class Document {
     this._opening = this._open()
   }
 
-  get type () { return 'raw' }
-  get contentType () { return 'raw buffer or octetstream' }
-
   [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
     let indent = ''
     if (typeof opts.indentationLvl === 'number') { while (indent.length < opts.indentationLvl) indent += ' ' }
@@ -53,15 +50,8 @@ module.exports = class Document {
   }
 
   async _open () {
-    if (typeof this.length !== 'number') await this.update()
-    // if (this.length > 0){
-    //   const header = await this.get(0)
-    //   debug('Client.Document#_open', this, { header })
-    //   // TODO read the header
-    //   // get the encoding
-    //   // decode/parse entries
-    // }
     debug('open', this)
+    if (typeof this.length !== 'number') await this.update()
   }
 
   async setHeader (header = {}) {

@@ -6,15 +6,23 @@ test('Profiles', async (t, createClient) => {
   client.profiles = new Profiles(client)
 
   const profile = await client.profiles.create({
-    serviceEndpoint: 'http://jlinxprofile.me/@paulpravenza'
+    header: ({id}) => (
+      {
+        serviceEndpoint: `http://jlinxprofile.me/jlinx/profiles/${id}`
+      }
+    )
   })
 
-  t.same(profile.serviceEndpoint, 'http://jlinxprofile.me/@paulpravenza')
+  const expectedServiceEndpoint = `http://jlinxprofile.me/jlinx/profiles/${profile.id}`
+  t.same(
+    profile.serviceEndpoint,
+    expectedServiceEndpoint
+  )
   t.same(profile._header, {
     id: profile.id,
     length: 1,
     contentType: 'application/json',
-    serviceEndpoint: 'http://jlinxprofile.me/@paulpravenza',
+    serviceEndpoint: expectedServiceEndpoint,
     host: client.host.url,
     signingKey: profile.signingKey
   })
@@ -52,4 +60,28 @@ test('Profiles', async (t, createClient) => {
     avatar: 'http://gravatar.com/@paulpravenza',
     preferredUsername: 'paulpravenza'
   })
+
+  t.same(
+    JSON.stringify(profile),
+    JSON.stringify({
+      id: profile.id,
+      header: profile.header,
+      writable: profile.writable,
+      signingKey: profile.signingKey,
+      state: {
+        avatar: 'http://gravatar.com/@paulpravenza',
+        preferredUsername: 'paulpravenza'
+      },
+      events: profile.events,
+    }),
+  )
+
+
+  const client2 = await createClient()
+  client2.profiles = new Profiles(client2)
+
+  const profile2 = await client2.profiles.get(profile.id)
+  t.same(profile2.writable, false)
+  t.same(profile.state, profile2.state)
+  t.same(profile.events, profile2.events)
 })

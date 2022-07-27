@@ -11,7 +11,7 @@ module.exports = class Profiles {
   async create (opts = {}) {
     const {
       ownerSigningKeys,
-      serviceEndpoint
+      header,
     } = opts
 
     await this.jlinx.connected()
@@ -20,9 +20,7 @@ module.exports = class Profiles {
     })
     debug('create', { doc })
     const profile = new Profile(doc, this)
-    await profile.init({
-      serviceEndpoint
-    })
+    await profile.init(header)
     await profile.ready()
     return profile
   }
@@ -53,6 +51,13 @@ class Profile extends EventMachine {
   get (key) {
     return this.value[key]
   }
+
+  // toJSON () {
+  //   return {
+  //     ...super.toJSON(),
+  //     serviceEndpoint: this.serviceEndpoint,
+  //   }
+  // }
 }
 
 Profile.events = {

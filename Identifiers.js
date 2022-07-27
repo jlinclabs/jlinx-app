@@ -38,10 +38,9 @@ class Identifier extends EventMachine {
   constructor (doc, identifiers) {
     super(doc)
     this._identifiers = identifiers
-    const { publicKey } = this._ledger.doc.ownerSigningKeys
-    this._publicKey = publicKey
-    this._signingKey = keyToString(publicKey)
-    this._did = publicKeyToDid(publicKey)
+    // const { publicKey } = this._ledger.doc.ownerSigningKeys
+    // this._signingKey = keyToString(publicKey)
+    // this._did = publicKeyToDid(publicKey)
   }
 
   get id () { return this._ledger.id }
@@ -49,7 +48,8 @@ class Identifier extends EventMachine {
   get writable () { return this._ledger.writable }
   get did () { return this._did }
   get publicKey () { return this._publicKey }
-  get signingKey () { return this._signingKey }
+  get signingKey () { return this._header?.signingKey }
+  get did () { return this.signingKey && publicKeyToDid(this.signingKey) }
 
   initialState () {
     return {
