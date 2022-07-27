@@ -1,10 +1,4 @@
 const Debug = require('debug')
-const b4a = require('b4a')
-const {
-  base58,
-  keyToString,
-  keyToBuffer
-} = require('jlinx-util')
 const EventMachine = require('./EventMachine')
 
 const debug = Debug('jlinx:client:profiles')
@@ -27,7 +21,7 @@ module.exports = class Profiles {
     debug('create', { doc })
     const profile = new Profile(doc, this)
     await profile.init({
-      serviceEndpoint,
+      serviceEndpoint
     })
     await profile.ready()
     return profile
@@ -50,9 +44,9 @@ class Profile extends EventMachine {
   get serviceEndpoint () { return this._header?.serviceEndpoint }
 
   async set (changes) {
-    for (const key in changes)
-      if (typeof changes[key] === 'undefined')
-        changes[key] = null
+    for (const key in changes) {
+      if (typeof changes[key] === 'undefined') { changes[key] = null }
+    }
     await this.appendEvent('update', changes)
   }
 
@@ -69,9 +63,8 @@ Profile.events = {
     },
     apply (state, changes) {
       state = { ...state, ...changes }
-      for (const key in state)
-        if (state[key] === null) delete state[key]
+      for (const key in state) { if (state[key] === null) delete state[key] }
       return state
     }
-  },
+  }
 }

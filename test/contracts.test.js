@@ -1,15 +1,19 @@
 const { test } = require('./helpers/test.js')
+const Identifiers = require('../Identifiers')
+const Contracts = require('../Contracts')
 
 test('contracts', async (t, createClient) => {
-  const alice = {}
-  const bob = {}
-  alice.client = await createClient(t.jlinxHosts[0].url)
-  bob.client = await createClient(t.jlinxHosts[1].url)
+  const alice = { client: await createClient(t.jlinxHosts[0].url) }
+  const bob = { client: await createClient(t.jlinxHosts[1].url) }
+  for (const actor of [alice, bob]) {
+    actor.client.identifiers = new Identifiers(actor.client)
+    actor.client.contracts = new Contracts(actor.client)
+  }
 
   t.notEquals(alice.client.host.url, bob.client.host.url)
 
-  alice.identifier = await alice.client.identifiers.createDidKey()
-  bob.identifier = await bob.client.identifiers.createDidKey()
+  alice.identifier = await alice.client.identifiers.create()
+  bob.identifier = await bob.client.identifiers.create()
 
   bob.contract = await bob.client.contracts.create()
   await bob.contract.update()

@@ -1,10 +1,4 @@
 const Debug = require('debug')
-const b4a = require('b4a')
-const {
-  base58,
-  keyToString,
-  keyToBuffer
-} = require('jlinx-util')
 const { compileSchemaValidator } = require('./schema')
 const Ledger = require('./Ledger')
 
@@ -36,7 +30,6 @@ module.exports = class EventMachine {
     this._ledger = new Ledger(doc)
     const { publicKey } = this._ledger.doc.ownerSigningKeys
     this._publicKey = publicKey
-    this._signingKey = keyToString(publicKey)
   }
 
   get _header () { return this._ledger.doc._header }
@@ -45,7 +38,7 @@ module.exports = class EventMachine {
   get writable () { return this._ledger.writable }
   get did () { return this._did }
   get publicKey () { return this._publicKey }
-  get signingKey () { return this._signingKey }
+  get signingKey () { return this._ledger.signingKey }
   get state () { return this._state }
   get events () { return this._events }
 
@@ -86,7 +79,7 @@ module.exports = class EventMachine {
     await this.update()
   }
 
-  initialState(){
+  initialState () {
     return {}
   }
 
