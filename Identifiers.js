@@ -12,7 +12,6 @@ const debug = Debug('jlinx:client:identifiers')
 module.exports = class Identifiers {
   constructor (jlinx) {
     this.jlinx = jlinx
-    this.keys = jlinx.vault.keyStore('identifiers')
   }
 
   async create (opts = {}) {
@@ -34,12 +33,6 @@ module.exports = class Identifiers {
     return await Identifier.open(doc, this)
   }
 }
-
-// class IdentifierEvents extends EventMachine {
-//   static events = {
-
-//   }
-// }
 
 class Identifier extends EventMachine {
   constructor (doc, identifiers) {
@@ -86,15 +79,21 @@ class Identifier extends EventMachine {
     await this.appendEvent('serviceRemoved', { serviceId })
   }
 
+  async addProfile(profile){
+    await this.appendEvent('serviceAdded', {
+      service: {
+        id: profile.id,
+        type: 'userProfile',
+        serviceEndpoint: profile.serviceEndpoint,
+      }
+    })
+  }
+
   asDidDocument () {
     return signingKeyToDidDocument(this.signingKey, {
       services: this.services
     })
   }
-}
-
-Identifier.initialState = {
-  services: []
 }
 
 Identifier.events = {

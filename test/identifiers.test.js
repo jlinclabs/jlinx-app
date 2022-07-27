@@ -1,13 +1,12 @@
 const { test } = require('./helpers/test.js')
 const { createSigningKeyPair } = require('./helpers/crypto.js')
 
-const {
-  didToPublicKey,
-  publicKeyToDid
-} = require('../Identifiers')
+const Identifiers = require('../Identifiers')
+const { didToPublicKey, publicKeyToDid } = require('../Identifiers')
 
 test('creating a did document', async (t, createClient) => {
   const client = await createClient(t.jlinxHosts[0].url)
+  client.identifiers = new Identifiers(client)
 
   const ownerSigningKeys = await createSigningKeyPair('identifiers_test')
   // TODO: make this hack less hacky

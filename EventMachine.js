@@ -1,4 +1,10 @@
 const Debug = require('debug')
+const b4a = require('b4a')
+const {
+  base58,
+  keyToString,
+  keyToBuffer
+} = require('jlinx-util')
 const { compileSchemaValidator } = require('./schema')
 const Ledger = require('./Ledger')
 
@@ -28,17 +34,26 @@ module.exports = class EventMachine {
 
   constructor (doc) {
     this._ledger = new Ledger(doc)
+    const { publicKey } = this._ledger.doc.ownerSigningKeys
+    this._publicKey = publicKey
+    this._signingKey = keyToString(publicKey)
   }
 
-  async ready () {
-    await this.update()
-  }
-
+  get id () { return this._ledger.id }
+  get host () { return this._ledger._header?.host }
+  get writable () { return this._ledger.writable }
+  get did () { return this._did }
+  get publicKey () { return this._publicKey }
+  get signingKey () { return this._signingKey }
   get state () { return this._state }
   get events () { return this._events }
 
   async init (header) {
     await this._ledger.init(header)
+  }
+
+  async ready () {
+    await this.update()
   }
 
   _getEventSpec (eventName) {
@@ -70,6 +85,10 @@ module.exports = class EventMachine {
     await this.update()
   }
 
+  initialState(){
+    return {}
+  }
+
   async update () {
     await this._ledger.update()
     const [, ...events] = await this._ledger.entries()
@@ -89,6 +108,18 @@ module.exports = class EventMachine {
 
     this._state = state
     return state
+  }
+
+  [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
+    let indent = ''
+    if (typeof opts.indentationLvl === 'number') { while (indent.length < opts.indentationLvl) indent += ' ' }
+    return this.constructor.name + '(\n' +
+      indent + '  id: ' + opts.stylize(this.id, 'string') + '\n' +
+      indent + '  writable: ' + opts.stylize(this.writable, 'boolean') + '\n' +
+      indent + '  host: ' + opts.stylize(this.host, 'string') + '\n' +
+      indent + '  signingKey: ' + opts.stylize(this.signingKey, 'string') + '\n' +
+      indent + '  version: ' + opts.stylize(this._ledger.doc.length, 'number') + '\n' +
+      indent + ')'
   }
 }
 

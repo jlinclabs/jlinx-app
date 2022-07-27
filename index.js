@@ -8,8 +8,6 @@ const Vault = require('jlinx-vault')
 
 const RemoteHost = require('./RemoteHost')
 const Document = require('./Document')
-const Identifiers = require('./Identifiers')
-const Contracts = require('./Contracts')
 
 const debug = Debug('jlinx:client')
 
@@ -27,9 +25,6 @@ module.exports = class JlinxClient {
     })
 
     this._ready = this._open()
-
-    this.identifiers = new Identifiers(this)
-    this.contracts = new Contracts(this)
   }
 
   ready () { return this._ready }
