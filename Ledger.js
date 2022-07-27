@@ -132,5 +132,4 @@ module.exports = class Ledger {
     }
     return entries
   }
-
 }
