@@ -83,7 +83,7 @@ class Identifier extends EventMachine {
     await this.appendEvent('serviceAdded', {
       service: {
         id: profile.id,
-        type: 'userProfile',
+        type: 'jlinx.profile',
         serviceEndpoint: profile.serviceEndpoint,
       }
     })

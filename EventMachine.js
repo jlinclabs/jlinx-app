@@ -39,8 +39,9 @@ module.exports = class EventMachine {
     this._signingKey = keyToString(publicKey)
   }
 
+  get _header () { return this._ledger.doc._header }
   get id () { return this._ledger.id }
-  get host () { return this._ledger._header?.host }
+  get host () { return this._header?.host }
   get writable () { return this._ledger.writable }
   get did () { return this._did }
   get publicKey () { return this._publicKey }
