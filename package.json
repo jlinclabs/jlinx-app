@@ -22,6 +22,7 @@
   "homepage": "https://github.com/jlinclabs/jlinx-client#readme",
   "dependencies": {
     "ajv": "^8.11.0",
+    "automerge": "^1.0.1-preview.7",
     "b4a": "^1.5.3",
     "canonicalize": "^1.0.8",
     "debug": "^4.3.4",

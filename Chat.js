@@ -5,25 +5,20 @@ const {
   keyToString,
   keyToBuffer
 } = require('jlinx-util')
+
 const EventMachine = require('./EventMachine')
 
-const debug = Debug('jlinx:client:identifiers')
+const debug = Debug('jlinx:client:chat')
 
-module.exports = class Identifiers {
+module.exports = class Chat {
   constructor (jlinx) {
     this.jlinx = jlinx
   }
 
-  async create (opts = {}) {
-    const {
-      ownerSigningKeys
-    } = opts
+  async createChatRoom (opts = {}) {
     await this.jlinx.connected()
-    const doc = await this.jlinx.create({
-      ownerSigningKeys
-    })
-    debug('create', { doc })
-    return await Identifier.create(doc, this)
+    const doc = await this.jlinx.create()
+    return await ChatRoom.create(doc, this)
   }
 
   async get (id) {
@@ -34,13 +29,16 @@ module.exports = class Identifiers {
   }
 }
 
-class Identifier extends EventMachine {
-  constructor (doc, identifiers) {
+class ChatRoom extends EventMachine {
+  constructor (doc, chat) {
     super(doc)
-    this._identifiers = identifiers
+    this._chat = chat
   }
 
+  get writable () { return this._ledger.writable }
   get did () { return this._did }
+  get publicKey () { return this._publicKey }
+  get signingKey () { return this._header?.signingKey }
   get did () { return this.signingKey && publicKeyToDid(this.signingKey) }
 
   initialState () {

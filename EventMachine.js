@@ -28,16 +28,13 @@ module.exports = class EventMachine {
 
   constructor (doc) {
     this._ledger = new Ledger(doc)
-    // const { publicKey } = this._ledger.doc.ownerSigningKeys
-    // this._publicKey = publicKey
   }
 
   get _header () { return this._ledger.doc._header }
   get id () { return this._ledger.id }
   get host () { return this._header?.host }
   get writable () { return this._ledger.writable }
-  // get publicKey () { return this._publicKey }
-  get signingKey () { return this._header.signingKey }
+  get signingKey () { return this._header?.signingKey }
   get state () { return this._state }
   get events () { return this._events }
 
