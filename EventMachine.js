@@ -44,7 +44,7 @@ module.exports = class EventMachine {
   toJSON () {
     return {
       id: this.id,
-      header: this.header,
+      header: this._header,
       writable: this.writable,
       signingKey: this.signingKey,
       state: this.state,
