@@ -18,7 +18,6 @@ module.exports = class Identifiers {
     const {
       ownerSigningKeys
     } = opts
-    await this.jlinx.connected()
     const doc = await this.jlinx.create({
       ownerSigningKeys
     })
@@ -40,7 +39,6 @@ class Identifier extends EventMachine {
     this._identifiers = identifiers
   }
 
-  get did () { return this._did }
   get did () { return this.signingKey && publicKeyToDid(this.signingKey) }
 
   initialState () {

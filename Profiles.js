@@ -11,7 +11,7 @@ module.exports = class Profiles {
   async create (opts = {}) {
     const {
       ownerSigningKeys,
-      header,
+      header
     } = opts
 
     await this.jlinx.connected()

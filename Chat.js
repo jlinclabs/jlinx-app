@@ -16,38 +16,104 @@ module.exports = class Chat {
   }
 
   async createChatRoom (opts = {}) {
-    await this.jlinx.connected()
     const doc = await this.jlinx.create()
     return await ChatRoom.create(doc, this)
   }
 
-  async get (id) {
+  async getChatRoom (id) {
     debug('get', { id })
     const doc = await this.jlinx.get(id)
     debug('get', { doc })
-    return await Identifier.open(doc, this)
+    return await ChatRoom.open(doc, this)
   }
 }
 
 class ChatRoom extends EventMachine {
+
   constructor (doc, chat) {
     super(doc)
     this._chat = chat
   }
 
-  get writable () { return this._ledger.writable }
-  get did () { return this._did }
-  get publicKey () { return this._publicKey }
-  get signingKey () { return this._header?.signingKey }
-  get did () { return this.signingKey && publicKeyToDid(this.signingKey) }
-
   initialState () {
     return {
-      services: []
+      memberIds: new Set(),
+      messages: [],
     }
   }
 
-  get services () { return this.state?.services }
+  async addMember (memberId) {
+    await this.appendEvent('memberJoined', { memberId })
+  }
+
+  async kickMember (memberId) {
+    await this.appendEvent('memberKicked', { memberId })
+  }
+
+  async createMembership(identifier){
+    const doc = await this._chat.jlinx.create()
+    return await ChatRoomMember.create(doc, this, identifier)
+  }
+}
+
+ChatRoom.events = {
+
+  memberJoined: {
+    schema: {
+      type: 'object',
+      properties: {
+        memberId: { type: 'string' },
+      },
+      required: ['memberId'],
+      additionalProperties: false
+    },
+    validate (state, { memberId }) {
+      // TODO validate memberId
+      if (state.memberIds.has(memberId)) return 'already a member'
+    },
+    apply (state, { memberId }) {
+      const memberIds = new Set(state.memberIds)
+      memberIds.add(memberId)
+      return { ...state, memberIds }
+    },
+    addEventStream({ memberId }){
+      const member = new ChatRoomMember('...')
+      return member
+    }
+  },
+
+  memberKicked: {
+    schema: {
+      type: 'object',
+      properties: {
+        memberId: { type: 'string' },
+      },
+      required: ['memberId'],
+      additionalProperties: false
+    },
+    validate (state, { memberId }) {
+      // TODO validate memberId
+      if (!state.members.has(memberId)) return 'not a member'
+    },
+    apply (state, { memberId }) {
+      const memberIds = new Set(state.memberIds)
+      memberIds.delete(memberId)
+      return { ...state, memberIds }
+    },
+    removeEventStream({ memberId }){
+      return memberId
+
+    }
+  }
+}
+
+
+class ChatRoomMember extends EventMachine {
+  constructor (doc, chatRoom, identifier) {
+    super(doc)
+    this.identifier = identifier
+    this._chatRoom = chatRoom
+  }
 
   [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
     let indent = ''
@@ -56,160 +122,49 @@ class ChatRoom extends EventMachine {
       indent + '  id: ' + opts.stylize(this.id, 'string') + '\n' +
       indent + '  writable: ' + opts.stylize(this.writable, 'boolean') + '\n' +
       indent + '  host: ' + opts.stylize(this.host, 'string') + '\n' +
-      indent + '  did: ' + opts.stylize(this.did, 'string') + '\n' +
-      indent + '  signingKey: ' + opts.stylize(this.signingKey, 'string') + '\n' +
       indent + ')'
   }
 
-  async addService (service) {
-    await this.appendEvent('serviceAdded', { service })
+  async createMessage(content){
+    await this.appendEvent('createdMessage', { content })
+    await this._chatRoom.update()
   }
 
-  async removeService (serviceId) {
-    await this.appendEvent('serviceRemoved', { serviceId })
-  }
-
-  async addProfile (profile) {
-    await this.appendEvent('serviceAdded', {
-      service: {
-        id: profile.id,
-        type: 'jlinx.profile',
-        serviceEndpoint: profile.serviceEndpoint
-      }
-    })
-  }
-
-  asDidDocument () {
-    return signingKeyToDidDocument(this.signingKey, {
-      services: this.services
-    })
-  }
 }
 
-Identifier.events = {
 
-  serviceAdded: {
+ChatRoomMember.events = {
+
+  createdMessage: {
     schema: {
       type: 'object',
       properties: {
-        service: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' }, // "did:example:123#linked-domain",
-            type: { type: 'string' }, // "LinkedDomains",
-            serviceEndpoint: { type: 'string' } // "https://bar.example.com"
-          },
-          required: ['id', 'type', 'serviceEndpoint'],
-          additionalProperties: true
-        }
+        content: { type: 'string' },
       },
-      required: ['service'],
+      required: ['content'],
       additionalProperties: false
     },
-    validate (state, event) {
-      if (!state.services) { return 'cannot add item to closed chest' }
-      if (
-        state.services.find(services =>
-          services.id === event.service.id
-        )
-      ) {
-        return `service already referenced by did document: ${event.services.id}`
-      }
+    validate (state, { content }) {
+      if (typeof content !== 'string') return 'content must be a string'
+      if (content.trim().length === 0) return 'cannot be blank'
     },
-    apply (state, event) {
-      return {
-        ...state,
-        services: [...state.services, event.service]
-      }
-    }
+    // apply (state, message) {
+    //   const messages = [...state.messages]
+    //   messages.push(message)
+    //   return { ...state, messages }
+    // }
   },
 
-  serviceRemoved: {
-    schema: {
-      type: 'object',
-      properties: {
-        serviceId: { type: 'string' }
-      },
-      required: ['serviceId'],
-      additionalProperties: false
-    },
-    validate (state, { serviceId }) {
-      const service = state.services.find(service => service.id === serviceId)
-      if (!service) { return `service is references by the did document: ${serviceId}` }
-    },
-    apply (state, { serviceId }) {
-      return {
-        ...state,
-        services: state.services.filter(service => service.id !== serviceId)
-      }
-    }
-  }
+  // updatedMessage: {
+
+  // },
+
+  // deletedMessage: {
+
+  // },
+
+  // reactedToMessage: {
+
+  // },
+
 }
-const DID_PREFIX = 'did:key:z6mk'
-
-function didToPublicKey (did) {
-  const matches = did.match(/^did:([^:]+):(.+)$/)
-  if (!matches) {
-    throw new Error(`invalid did "${did}"`)
-  }
-  const [, method, id] = matches
-  if (method === 'key') {
-    if (!id.startsWith('z6mk')) {
-      throw new Error(`invalid key encoding format "${did}"`)
-    }
-    return b4a.from(base58.decode(id.slice(4)))
-  }
-  if (method === 'jlinx') {
-    throw new Error('did:jlinx support not done yet')
-  }
-}
-
-function publicKeyToDid (publicKey) {
-  return `${DID_PREFIX}${base58.encode(keyToBuffer(publicKey))}`
-}
-
-function signingKeyToDidDocument (publicKey, opts = {}) {
-  const did = publicKeyToDid(publicKey)
-  const publicKeyMultibase = did.split(DID_PREFIX)[1]
-  const didDocument = {
-    '@context': [
-      'https://www.w3.org/ns/did/v1',
-      'https://w3id.org/security/suites/ed25519-2020/v1',
-      'https://w3id.org/security/suites/x25519-2020/v1'
-    ],
-    id: `${did}`,
-    verificationMethod: [{
-      id: `${did}#${publicKeyMultibase}`,
-      type: 'Ed25519VerificationKey2020',
-      controller: `${did}`,
-      publicKeyMultibase: `${publicKeyMultibase}`
-    }],
-    authentication: [
-      `${did}#${publicKeyMultibase}`
-    ],
-    assertionMethod: [
-      `${did}#${publicKeyMultibase}`
-    ],
-    capabilityDelegation: [
-      `${did}#${publicKeyMultibase}`
-    ],
-    capabilityInvocation: [
-      `${did}#${publicKeyMultibase}`
-    ],
-    keyAgreement: [{
-      id: `${did}#${publicKeyMultibase}`,
-      type: 'X25519KeyAgreementKey2020',
-      controller: `${did}`,
-      publicKeyMultibase: `${publicKeyMultibase}`
-    }]
-  }
-
-  if (opts.services) didDocument.services = opts.services
-
-  return didDocument
-}
-
-Object.assign(module.exports, {
-  didToPublicKey,
-  publicKeyToDid
-})

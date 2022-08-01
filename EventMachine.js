@@ -5,6 +5,7 @@ const Ledger = require('./Ledger')
 const debug = Debug('jlinx:client:EventMachine')
 
 module.exports = class EventMachine {
+
   static set events (events) {
     if (this._events) throw new Error(`unable to redefine events for ${this}`)
     this._events = compileEvents(events)
@@ -45,7 +46,7 @@ module.exports = class EventMachine {
       writable: this.writable,
       signingKey: this.signingKey,
       state: this.state,
-      events: this.events,
+      events: this.events
     }
   }
 
@@ -93,21 +94,41 @@ module.exports = class EventMachine {
     return {}
   }
 
+  async _addEventStream(streamId){
+
+  }
+
+  async _removeEventStream(streamId){
+
+  }
+
+
   async update () {
     await this._ledger.update()
-    const [, ...events] = await this._ledger.entries()
+    let [, ...events] = await this._ledger.entries()
     let state = this.initialState()
-
-    this._events = [...events]
+    this._events = []
 
     while (events.length > 0) {
-      const { '@event': eventName, ...payload } = events.shift()
+      const event = events.shift()
+      this._events.push(event)
+      const { '@event': eventName, ...payload } = event
       const eventSpec = this._getEventSpec(eventName)
       if (!eventSpec) {
         console.error('\n\nBAD EVENT!\nignoring unexpected event', eventName, '\n\n')
         continue
       }
-      state = eventSpec.apply(state, payload)
+      if (eventSpec.apply){
+        state = eventSpec.apply(state, payload)
+      }
+      if (eventSpec.addEventStream){
+        const eventStream = eventSpec.addEventStream(payload, state)
+        events = mergeEvents(events, eventStream.events)
+      }
+      if (eventSpec.removeEventStream){
+        const id = eventSpec.removeEventStream(payload, state)
+        events = purgeEvents(events, id)
+      }
     }
 
     this._state = state
@@ -157,4 +178,17 @@ function makeNullSchemaValidator () {
     return false
   }
   return nullSchemaValidator
+}
+
+
+
+function mergeEvents(events, newEvents){
+  // find the first newEvent that references an existing event
+  // join an order new events into existing events
+  //
+
+}
+
+function purgeEvents(){
+
 }

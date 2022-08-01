@@ -6,7 +6,7 @@ test('Profiles', async (t, createClient) => {
   client.profiles = new Profiles(client)
 
   const profile = await client.profiles.create({
-    header: ({id}) => (
+    header: ({ id }) => (
       {
         serviceEndpoint: `http://jlinxprofile.me/jlinx/profiles/${id}`
       }
@@ -72,10 +72,9 @@ test('Profiles', async (t, createClient) => {
         avatar: 'http://gravatar.com/@paulpravenza',
         preferredUsername: 'paulpravenza'
       },
-      events: profile.events,
-    }),
+      events: profile.events
+    })
   )
-
 
   const client2 = await createClient()
   client2.profiles = new Profiles(client2)
