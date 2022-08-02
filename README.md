@@ -110,7 +110,7 @@ if I give a storage API object to the client maybe documents like ChatRoom
 can store data on-stream and also off-stream "private data" in the developer
 can choose where to store it. That way as we process events we have a place to write our state snapshot.
 
-I think we need to move all the event definitions to the main class and not have sub-documents having their own event definitions.
+I think we need to move all the event definitions to the main class and not have sub-documents having their own event definitions. 
 
 
 Two stream types? main-stream and sub-stream?
