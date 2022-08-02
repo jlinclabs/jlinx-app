@@ -71,3 +71,50 @@ implementation idea: since we want all streams to have some set of basic feature
 - `stream:excludedStream` { streamId }
 
 so subclasses can emit events for membership and another event for stream stuff? :/ ??
+
+
+
+
+
+
+## Braiding Streams
+
+- A main stream is the start
+- each participant has their own stream
+- streams are added when referenced by the main stream or a previously referenced stream
+- secondary streams must reference their main stream in their header?
+
+
+in order for a class to have an API like this
+
+```js
+// bob creates a chat room
+const chatRoom = await chatRooms.create()
+const chatRoomId = chatRoom.id
+
+
+// alice joins it
+const chatRoom = await chatRooms.create(chatRoomId)
+const chatRoomMembershipId = await chatRoom.join(identifier)
+// chatRoom.join creates a new stream owned by the joininer
+// that other steam needs to be sent to the chatRoom creator
+// so they can append a main-stream event to add the sub-stream
+const chatRoomMembershipId = await chatRoom.leave(identifier)
+```
+
+
+I think I need a way to create local, unshared, hypercores so I can
+process events from multiple streams into a local cache?
+
+if I give a storage API object to the client maybe documents like ChatRoom
+can store data on-stream and also off-stream "private data" in the developer
+can choose where to store it. That way as we process events we have a place to write our state snapshot.
+
+I think we need to move all the event definitions to the main class and not have sub-documents having their own event definitions.
+
+
+Two stream types? main-stream and sub-stream?
+
+
+
+*FRUSTRATING* im reinventing Autobase because I dont want to upgrade to hypercore 10 or learn how to use Autobase
