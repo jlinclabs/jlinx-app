@@ -4,6 +4,7 @@ const Identifiers = require('../Identifiers')
 const Chat = require('../Chat')
 
 test('Chat', async (t, createClient) => {
+
   async function createActor(){
     const client = await createClient()
     client.identifiers = new Identifiers(client)

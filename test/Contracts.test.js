@@ -2,7 +2,7 @@ const { test } = require('./helpers/test.js')
 const Identifiers = require('../Identifiers')
 const Contracts = require('../Contracts')
 
-test('contracts', async (t, createClient) => {
+test('Contracts', async (t, createClient) => {
   const alice = { client: await createClient(t.jlinxHosts[0].url) }
   const bob = { client: await createClient(t.jlinxHosts[1].url) }
   for (const actor of [alice, bob]) {

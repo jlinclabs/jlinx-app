@@ -118,3 +118,22 @@ Two stream types? main-stream and sub-stream?
 
 
 *FRUSTRATING* im reinventing Autobase because I dont want to upgrade to hypercore 10 or learn how to use Autobase
+
+
+```
+m: main
+
+m0: header
+m1: event to add another steam
+
+
+```
+
+- bob makes a stream S1
+- bob give that steam id to Alice
+- Alice makes their own steam and gives the Bob her stream's id
+- Alice waits for Bob's steam to accept her
+- Bob appends an event to S1 that references S2
+- Alice see's bob has added her stream
+
+
