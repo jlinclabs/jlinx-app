@@ -1,118 +1,144 @@
-const b4a = require('b4a')
-const { test } = require('./helpers/test.js')
+const { test, createTestnet, timeout } = require('./helpers/test.js')
 
-test('smoke test', async (t, createClient) => {
-  const [client1, client2] = await Promise.all([
-    await createClient(),
-    await createClient()
-  ])
-  await Promise.all([
-    await client1.connected(),
-    await client2.connected()
-  ])
-})
+// test('smoke test', async (t) => {
+//   const { createHttpServers, createJlinxClient } = await createTestnet(t)
+//   const [host1, host2] = await createHttpServers(2)
+//   const client1 = await createJlinxClient(host1.url)
+//   const client2 = await createJlinxClient(host2.url)
 
-test('sync same host', async (t, createClient) => {
-  const client = await createClient()
-  await client.connected()
+//   const doc1 = await client1.create()
+//   await doc1.append(['hello', 'world'])
+//   await timeout(100)
 
-  const doc1 = await client.create()
+//   const doc1copy = await client2.get(doc1.id)
+//   const copyUpdated = t.test('copyUpdated')
+//   copyUpdated.plan(1)
 
-  t.equal(doc1.length, 0)
-  t.equal(doc1.writable, true)
-  t.equal(doc1.host, client.host)
-  t.ok(doc1.ownerSigningKeys)
+//   {
+//     const update = async () => {
+//       await doc1copy.update()
+//       if (doc1copy.length === 0) {
+//         await timeout(100)
+//         return update()
+//       }
+//       copyUpdated.pass()
+//     }
+//     update()
+//   }
 
-  const doc2 = await client.get(doc1.id)
+//   await copyUpdated
+//   t.alike(doc1copy.length, doc1.length)
+//   t.alike(await doc1copy.get(0), await doc1.get(0))
+//   t.alike(await doc1copy.get(1), await doc1.get(1))
+// })
 
-  t.equal(doc1.id, doc2.id)
-  t.equal(doc2.length, 0)
-  t.equal(doc2.writable, true)
-  t.equal(doc2.host, client.host)
-  t.ok(doc2.ownerSigningKeys)
+// test('sync same host', async (t) => {
+//   const { createHttpServers, createJlinxClient } = await createTestnet(t)
+//   const [host1] = await createHttpServers(2)
+//   const client = await createJlinxClient(host1.url)
 
-  await doc1.append([
-    b4a.from('block one'),
-    b4a.from('block two')
-  ])
+//   const doc1 = await client.create()
 
-  t.equal(doc1.length, 2)
-  t.equal(doc2.length, 0)
+//   t.alike(doc1.length, 0)
+//   t.alike(doc1.writable, true)
+//   t.alike(doc1.host, client.host)
+//   t.ok(doc1.ownerSigningKeys)
 
-  await doc2.update()
-  t.equal(doc2.length, 2)
+//   const doc2 = await client.get(doc1.id)
 
-  await doc2.append([
-    b4a.from('block three'),
-    b4a.from('block four')
-  ])
-  t.equal(doc1.length, 2)
-  t.equal(doc2.length, 4)
-  await doc1.update()
-  t.equal(doc1.length, 4)
+//   t.alike(doc1.id, doc2.id)
+//   t.alike(doc2.length, 0)
+//   t.alike(doc2.writable, true)
+//   t.alike(doc2.host, client.host)
+//   t.ok(doc2.ownerSigningKeys)
 
-  for (const doc of [doc1, doc2]) {
-    t.deepEqual(
-      (await doc.get(0)).toString(),
-      'block one'
-    )
-    t.deepEqual(
-      (await doc.get(1)).toString(),
-      'block two'
-    )
-    t.deepEqual(
-      (await doc.get(2)).toString(),
-      'block three'
-    )
-    t.deepEqual(
-      (await doc.get(3)).toString(),
-      'block four'
-    )
-  }
+//   await doc1.append([
+//     'block one',
+//     'block two'
+//   ])
 
-  t.end()
-})
+//   t.alike(doc1.length, 2)
+//   t.alike(doc2.length, 0)
 
-test('sync diff host', async (t, createClient) => {
-  t.ok(t.jlinxHosts[1].node.peers.size > 0)
-  t.ok(t.jlinxHosts[0].node.peers.size > 0)
-  const client1 = await createClient(t.jlinxHostHttpServers[0].url)
-  const client2 = await createClient(t.jlinxHostHttpServers[1].url)
+//   await doc2.update()
+//   t.alike(doc2.length, 2)
+
+//   await doc2.append([
+//     'block three',
+//     'block four'
+//   ])
+//   t.alike(doc1.length, 2)
+//   t.alike(doc2.length, 4)
+//   await doc1.update()
+//   t.alike(doc1.length, 4)
+
+//   for (const doc of [doc1, doc2]) {
+//     t.alike(
+//       (await doc.get(0)).toString(),
+//       'block one'
+//     )
+//     t.alike(
+//       (await doc.get(1)).toString(),
+//       'block two'
+//     )
+//     t.alike(
+//       (await doc.get(2)).toString(),
+//       'block three'
+//     )
+//     t.alike(
+//       (await doc.get(3)).toString(),
+//       'block four'
+//     )
+//   }
+
+//   t.end()
+// })
+
+test('sync diff host', async (t) => {
+  const { createHttpServers, createJlinxClient } = await createTestnet(t)
+  const [host1, host2] = await createHttpServers(2)
+  const client1 = await createJlinxClient(host1.url)
+  const client2 = await createJlinxClient(host2.url)
+
   const doc1 = await client1.create()
 
-  t.equal(doc1.length, 0)
-  t.equal(doc1.writable, true)
-  t.equal(doc1.host, client1.host)
+  t.alike(doc1.length, 0)
+  t.alike(doc1.writable, true)
+  t.alike(doc1.host, client1.host)
   t.ok(doc1.ownerSigningKeys)
 
   const doc2 = await client2.get(doc1.id)
-  t.equal(doc2.length, 0)
-  t.equal(doc2.writable, false)
-  t.equal(doc2.host, client2.host)
+  t.alike(doc2.length, 0)
+  t.alike(doc2.writable, false)
+  t.alike(doc2.host, client2.host)
   t.ok(!doc2.ownerSigningKeys)
 
-  t.equal(doc1.id, doc2.id)
-  t.equal(doc1.length, doc2.length)
+  t.alike(doc1.id, doc2.id)
+  t.alike(doc1.length, doc2.length)
 
   await doc1.append([
-    b4a.from('block one'),
-    b4a.from('block two')
+    'block one',
+    'block two'
   ])
 
-  t.equal(doc1.length, 2)
-  t.equal(doc2.length, 0)
+  console.log('NODE', host1.jlinx.node.cores)
+  console.log('_replicationStreams', host1.jlinx.node.cores._replicationStreams)
 
+  t.alike(doc1.length, 2)
+  t.alike(doc2.length, 0)
+
+  // await
   await doc2.update()
-  t.equal(doc2.length, 2)
+  t.alike(doc2.length, 2)
 
   await doc1.append([
-    b4a.from('block three'),
-    b4a.from('block four')
+    'block three',
+    'block four'
   ])
-  t.equal(doc1.length, 4)
-  t.equal(doc2.length, 2)
+  t.alike(doc1.length, 4)
+  t.alike(doc2.length, 2)
   await doc2.update()
-  t.equal(doc2.length, 4)
+  t.alike(doc2.length, 4)
 
   for (const doc of [doc1, doc2]) {
     t.deepEqual(

@@ -27,18 +27,22 @@
     "b4a": "^1.5.3",
     "canonicalize": "^1.0.8",
     "debug": "^4.3.4",
-    "jlinx-util": "github:jlinclabs/jlinx-util#907a7345b527a017bd62b3f5c8ad51433225c9d6",
-    "jlinx-vault": "github:jlinclabs/jlinx-vault#29776247b9fcedda03678a951e5f7b0dab96d014",
+    "jlinx-util": "github:jlinclabs/jlinx-util#774b8c1e9bc683d59c38a502e0d3e5d6a2a765b6",
+    "jlinx-vault": "github:jlinclabs/jlinx-vault#6890b1dfa17a2f8654c68734897f0bb34b5a57fa",
     "lodash.isplainobject": "^4.0.6",
     "node-fetch": "^3.2.4"
   },
   "devDependencies": {
-    "@hyperswarm/dht": "^5.0.25",
+    "@hyperswarm/testnet": "^3.0.0",
+    "brittle": "^2.3.1",
     "get-port": "^6.1.2",
-    "jlinx-host": "github:jlinclabs/jlinx-host#862df98db65d5dca0d4e8b0558562ca1a6c5b05e",
+    "jlinx-host": "github:jlinclabs/jlinx-host#33e3104138247ce1d3e06832549a360f8917318f",
+    "node-fetch": "^3.2.10",
+    "nodemon": "^2.0.19",
+    "nonsynchronous": "^1.2.0",
+    "random-access-memory": "^5.0.0",
     "standard": "^17.0.0",
-    "tape": "^5.5.3",
-    "tape-promise": "^4.0.0",
+    "supertest": "^6.2.4",
     "tmp-promise": "^3.0.3"
   }
 }

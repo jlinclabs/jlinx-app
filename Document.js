@@ -94,7 +94,8 @@ module.exports = class Document {
       throw new Error('jlinx document is not writable')
     }
     // sign each block
-    for (const block of blocks) {
+    for (let block of blocks) {
+      if (!b4a.isBuffer(block)) block = b4a.from(block)
       const signature = await this.ownerSigningKeys.sign(block)
       const newLength = await this.host.append(
         this.id,
