@@ -98,7 +98,7 @@ Chest.events = {
 
 test('Chest as EventMachine', async (t) => {
   const { createHttpServers, createJlinxClient } = await createTestnet(t)
-  const [host1, host2] = await createHttpServers(2)
+  const [host1] = await createHttpServers(2)
   const client = await createJlinxClient(host1.url)
   const doc = await client.create()
   const chest1 = await Chest.create(doc)

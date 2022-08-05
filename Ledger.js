@@ -1,7 +1,8 @@
 const Debug = require('debug')
 const b4a = require('b4a')
 const jsonCanonicalize = require('canonicalize')
-const { verify, keyToBuffer } = require('jlinx-util')
+const multibase = require('jlinx-util/multibase')
+const { verify } = require('jlinx-util')
 const debug = Debug('jlinx:client:Ledger')
 
 module.exports = class Ledger {
@@ -37,7 +38,7 @@ module.exports = class Ledger {
         this._header.length > 0 &&
         this.doc.ownerSigningKeys &&
         !b4a.equals(
-          keyToBuffer(this._header.signingKey),
+          multibase.toBuffer(this._header.signingKey),
           this.doc.ownerSigningKeys.publicKey
         )
       ) throw new Error(`owner signing key mismatch! id=${this.id}`)
@@ -76,7 +77,7 @@ module.exports = class Ledger {
     return await verify(
       b4a.from(jsonCanonicalize(signed)),
       b4a.from(__signature, 'hex'),
-      keyToBuffer(this.signingKey)
+      multibase.toBuffer(this.signingKey)
     )
   }
 
