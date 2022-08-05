@@ -1,8 +1,10 @@
-const { test } = require('./helpers/test.js')
+const { test, createTestnet } = require('./helpers/test.js')
 const Profiles = require('../Profiles.js')
 
-test('Profiles', async (t, createClient) => {
-  const client = await createClient()
+test('Profiles', async (t) => {
+  const { createHttpServers, createJlinxClient } = await createTestnet(t)
+  const [host1, host2] = await createHttpServers(2)
+  const client = await createJlinxClient(host1.url)
   client.profiles = new Profiles(client)
 
   const profile = await client.profiles.create({
@@ -14,11 +16,11 @@ test('Profiles', async (t, createClient) => {
   })
 
   const expectedServiceEndpoint = `http://jlinxprofile.me/jlinx/profiles/${profile.id}`
-  t.same(
+  t.is(
     profile.serviceEndpoint,
     expectedServiceEndpoint
   )
-  t.same(profile._header, {
+  t.alike(profile._header, {
     id: profile.id,
     length: 1,
     contentType: 'application/json',
@@ -33,7 +35,7 @@ test('Profiles', async (t, createClient) => {
     preferredUsername: 'paulpravenza'
   })
 
-  t.same(profile.state, {
+  t.alike(profile.state, {
     name: 'Paul Pravenza',
     avatar: 'http://gravatar.com/@paulpravenza',
     preferredUsername: 'paulpravenza'
@@ -44,7 +46,7 @@ test('Profiles', async (t, createClient) => {
     favoriteColor: '#33d2f1'
   })
 
-  t.same(profile.state, {
+  t.alike(profile.state, {
     name: 'Paul P.',
     avatar: 'http://gravatar.com/@paulpravenza',
     preferredUsername: 'paulpravenza',
@@ -56,31 +58,31 @@ test('Profiles', async (t, createClient) => {
     favoriteColor: undefined
   })
 
-  t.same(profile.state, {
+  t.alike(profile.state, {
     avatar: 'http://gravatar.com/@paulpravenza',
     preferredUsername: 'paulpravenza'
   })
 
-  t.same(
-    JSON.stringify(profile),
-    JSON.stringify({
-      id: profile.id,
-      header: profile.header,
-      writable: profile.writable,
-      signingKey: profile.signingKey,
-      state: {
-        avatar: 'http://gravatar.com/@paulpravenza',
-        preferredUsername: 'paulpravenza'
-      },
-      events: profile.events
-    })
-  )
+  // t.is(
+  //   JSON.stringify(profile),
+  //   JSON.stringify({
+  //     id: profile.id,
+  //     header: profile.header,
+  //     writable: profile.writable,
+  //     signingKey: profile.signingKey,
+  //     state: {
+  //       avatar: 'http://gravatar.com/@paulpravenza',
+  //       preferredUsername: 'paulpravenza'
+  //     },
+  //     events: profile.events
+  //   })
+  // )
 
-  const client2 = await createClient()
+  const client2 = await createJlinxClient(host2.url)
   client2.profiles = new Profiles(client2)
 
   const profile2 = await client2.profiles.get(profile.id)
-  t.same(profile2.writable, false)
-  t.same(profile.state, profile2.state)
-  t.same(profile.events, profile2.events)
+  t.is(profile2.writable, false)
+  t.alike(profile.state, profile2.state)
+  t.alike(profile.events, profile2.events)
 })
