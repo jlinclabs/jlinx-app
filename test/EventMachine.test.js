@@ -1,4 +1,4 @@
-const { test } = require('./helpers/test.js')
+const { test, createTestnet } = require('./helpers/test.js')
 
 const EventMachine = require('../EventMachine')
 
@@ -96,35 +96,37 @@ Chest.events = {
   }
 }
 
-test('Chest as EventMachine', async (t, createClient) => {
-  const client = await createClient()
+test('Chest as EventMachine', async (t) => {
+  const { createHttpServers, createJlinxClient } = await createTestnet(t)
+  const [host1, host2] = await createHttpServers(2)
+  const client = await createJlinxClient(host1.url)
   const doc = await client.create()
   const chest1 = await Chest.create(doc)
 
-  t.same(chest1.state, {
+  t.alike(chest1.state, {
     open: false,
     items: []
   })
 
-  await t.rejects(
+  await t.exception(
     async () => {
       await chest1.open({ bad: 'payload' })
     },
-    { message: 'invalid event payload: must be null or undefined' }
+    /invalid event payload: must be null or undefined/
   )
 
   await chest1.open()
 
-  t.same(chest1.state, {
+  t.alike(chest1.state, {
     open: true,
     items: []
   })
 
-  await t.rejects(
+  await t.exception(
     async () => {
       await chest1.addItem()
     },
-    { message: 'invalid event payload: must have required property \'item\'' }
+    /invalid event payload: must have required property 'item'/
   )
 
   await chest1.addItem({
@@ -133,7 +135,7 @@ test('Chest as EventMachine', async (t, createClient) => {
     magic: false
   })
 
-  t.same(chest1.state, {
+  t.alike(chest1.state, {
     open: true,
     items: [
       {
@@ -146,7 +148,7 @@ test('Chest as EventMachine', async (t, createClient) => {
 
   await chest1.close()
 
-  t.same(chest1.state, {
+  t.alike(chest1.state, {
     open: false,
     items: [
       {
@@ -157,7 +159,7 @@ test('Chest as EventMachine', async (t, createClient) => {
     ]
   })
 
-  await t.rejects(
+  await t.exception(
     async () => {
       await chest1.addItem({
         id: 'shield9876',
@@ -165,24 +167,24 @@ test('Chest as EventMachine', async (t, createClient) => {
         magic: false
       })
     },
-    { message: 'cannot add item to closed chest' }
+    /cannot add item to closed chest/
   )
 
   await chest1.open()
 
-  await t.rejects(
+  await t.exception(
     async () => {
       await chest1.addItem({})
     },
-    { message: 'invalid event payload: /item must have required property \'id\'' }
+    /invalid event payload: \/item must have required property 'id'/
   )
-  await t.rejects(
+  await t.exception(
     async () => {
       await chest1.addItem({
         id: 'shield9876'
       })
     },
-    { message: 'invalid event payload: /item must have required property \'desc\'' }
+    /invalid event payload: \/item must have required property 'desc'/
   )
 
   await chest1.addItem({
@@ -191,7 +193,7 @@ test('Chest as EventMachine', async (t, createClient) => {
     magic: false
   })
 
-  t.same(chest1.state, {
+  t.alike(chest1.state, {
     open: true,
     items: [
       {
@@ -209,17 +211,17 @@ test('Chest as EventMachine', async (t, createClient) => {
 
   await chest1.close()
 
-  await t.rejects(
+  await t.exception(
     async () => {
       await chest1.removeItem('shield9876')
     },
-    { message: 'cannot remove item from closed chest' }
+    /cannot remove item from closed chest/
   )
 
   await chest1.open()
   await chest1.removeItem('shield9876')
 
-  t.same(chest1.state, {
+  t.alike(chest1.state, {
     open: true,
     items: [
       {
@@ -230,7 +232,7 @@ test('Chest as EventMachine', async (t, createClient) => {
     ]
   })
 
-  t.same(chest1.events, [
+  t.alike(chest1.events, [
     {
       '@event': 'opened'
     },
