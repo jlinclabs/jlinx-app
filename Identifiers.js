@@ -1,10 +1,6 @@
 const Debug = require('debug')
 const b4a = require('b4a')
-const {
-  base58,
-  keyToString,
-  keyToBuffer
-} = require('jlinx-util')
+const multibase = require('jlinx-util/multibase')
 const EventMachine = require('./EventMachine')
 
 const debug = Debug('jlinx:client:identifiers')
@@ -39,7 +35,7 @@ class Identifier extends EventMachine {
     this._identifiers = identifiers
   }
 
-  get did () { return this.signingKey && publicKeyToDid(this.signingKey) }
+  get did () { return this.signingKey && publicKeyToDidKey(this.signingKey) }
 
   initialState () {
     return {
@@ -145,7 +141,7 @@ Identifier.events = {
     }
   }
 }
-const DID_PREFIX = 'did:key:z6mk'
+// const DID_PREFIX = 'did:key:z6mk'
 
 function didToPublicKey (did) {
   const matches = did.match(/^did:([^:]+):(.+)$/)
@@ -164,13 +160,25 @@ function didToPublicKey (did) {
   }
 }
 
-function publicKeyToDid (publicKey) {
-  return `${DID_PREFIX}${base58.encode(keyToBuffer(publicKey))}`
+function publicKeyToDidKey (publicKey) {
+  return `did:key:${multibase.encode(publicKey)}`
+  // return `${DID_PREFIX}${base58.encode(keyToBuffer(publicKey))}`
+}
+
+function didToPublicKey (did) {
+  const [ _, method, key ] = did.match(/^did:([^:]+):([^:]+)/)
+  // todo consider other methods
+  if (method === 'key' || method === 'jlinx')
+    return multibase.toBuffer(key)
+  throw new Error(`unsupported did method "${methos}"`)
 }
 
 function signingKeyToDidDocument (publicKey, opts = {}) {
-  const did = publicKeyToDid(publicKey)
-  const publicKeyMultibase = did.split(DID_PREFIX)[1]
+  console.log('!!!!signingKeyToDidDocument', { publicKey })
+  publicKey = multibase.toBuffer(publicKey)
+  const did = publicKeyToDidKey(publicKey)
+  const publicKeyMultibase = did.split('did:key')[1]
+  // const publicKeyMultibase = multibase.encode(publicKey)
   const didDocument = {
     '@context': [
       'https://www.w3.org/ns/did/v1',
@@ -211,5 +219,5 @@ function signingKeyToDidDocument (publicKey, opts = {}) {
 
 Object.assign(module.exports, {
   didToPublicKey,
-  publicKeyToDid
+  publicKeyToDidKey
 })

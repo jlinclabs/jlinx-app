@@ -1,6 +1,6 @@
 const Debug = require('debug')
 const b4a = require('b4a')
-const { keyToString } = require('jlinx-util')
+const multibase = require('jlinx-util/multibase')
 
 const debug = Debug('jlinx:client:document')
 
@@ -67,7 +67,7 @@ module.exports = class Document {
       contentType: 'application/octet-stream',
       ...header,
       host: this.host.url,
-      signingKey: keyToString(this.ownerSigningKeys.publicKey)
+      signingKey: multibase.encode(this.ownerSigningKeys.publicKey)
     })
     this._header = JSON.parse(header)
     await this.append([b4a.from(header)])

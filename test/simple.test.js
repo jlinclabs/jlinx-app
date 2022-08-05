@@ -1,4 +1,4 @@
-const { test, createTestnet, timeout } = require('./helpers/test.js')
+const { test, createTestnet } = require('./helpers/test.js')
 
 // test('smoke test', async (t) => {
 //   const { createHttpServers, createJlinxClient } = await createTestnet(t)
