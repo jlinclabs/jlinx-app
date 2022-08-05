@@ -1,3 +1,4 @@
+const multibase = require('jlinx-util/multibase')
 const { test, createTestnet } = require('./helpers/test.js')
 const { createSigningKeyPair } = require('./helpers/crypto.js')
 
@@ -13,7 +14,7 @@ test('did:key:xxxx <-> publicKey', async (t) => {
 
 test('creating a did document', async (t) => {
   const { createHttpServers, createJlinxClient } = await createTestnet(t)
-  const [host1, host2] = await createHttpServers(2)
+  const [host1] = await createHttpServers(2)
   const client = await createJlinxClient(host1.url)
 
   client.identifiers = new Identifiers(client)
@@ -31,8 +32,9 @@ test('creating a did document', async (t) => {
     ownerSigningKeys
   })
 
+  t.is(identifier.did, 'did:key:f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1')
   t.is(identifier.did, publicKeyToDidKey(identifier._header.signingKey))
-  // t.is(didToPublicKey(identifier.did), identifier._header.signingKey)
+  t.alike(didToPublicKey(identifier.did), multibase.toBuffer(identifier._header.signingKey))
   t.is(identifier._ledger.doc.ownerSigningKeys, ownerSigningKeys)
   t.ok(identifier.writable)
   const copy = await client.identifiers.get(identifier.id)
@@ -227,4 +229,3 @@ test('creating a did document', async (t) => {
     }
   ])
 })
-

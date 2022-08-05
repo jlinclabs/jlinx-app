@@ -1,5 +1,4 @@
 const Debug = require('debug')
-const b4a = require('b4a')
 const multibase = require('jlinx-util/multibase')
 const EventMachine = require('./EventMachine')
 
@@ -35,7 +34,9 @@ class Identifier extends EventMachine {
     this._identifiers = identifiers
   }
 
-  get did () { return this.signingKey && publicKeyToDidKey(this.signingKey) }
+  get did () {
+    if (this.signingKey) return publicKeyToDidKey(this.signingKey)
+  }
 
   initialState () {
     return {
@@ -141,36 +142,23 @@ Identifier.events = {
     }
   }
 }
-// const DID_PREFIX = 'did:key:z6mk'
 
 function didToPublicKey (did) {
-  const matches = did.match(/^did:([^:]+):(.+)$/)
+  const matches = did.match(/^did:([^:]+):([^:]+)/)
   if (!matches) {
     throw new Error(`invalid did "${did}"`)
   }
-  const [, method, id] = matches
-  if (method === 'key') {
-    if (!id.startsWith('z6mk')) {
-      throw new Error(`invalid key encoding format "${did}"`)
-    }
-    return b4a.from(base58.decode(id.slice(4)))
-  }
-  if (method === 'jlinx') {
-    throw new Error('did:jlinx support not done yet')
+  const [, method, encodedPublicKey] = matches
+  if (method === 'key' || method === 'jlinx') {
+    return multibase.toBuffer(encodedPublicKey)
   }
 }
 
 function publicKeyToDidKey (publicKey) {
+  if (typeof publicKey === 'string') {
+    publicKey = multibase.toBuffer(publicKey)
+  }
   return `did:key:${multibase.encode(publicKey)}`
-  // return `${DID_PREFIX}${base58.encode(keyToBuffer(publicKey))}`
-}
-
-function didToPublicKey (did) {
-  const [ _, method, key ] = did.match(/^did:([^:]+):([^:]+)/)
-  // todo consider other methods
-  if (method === 'key' || method === 'jlinx')
-    return multibase.toBuffer(key)
-  throw new Error(`unsupported did method "${methos}"`)
 }
 
 function signingKeyToDidDocument (publicKey, opts = {}) {
