@@ -1,6 +1,8 @@
 const Path = require('path')
 const Debug = require('debug')
 const b4a = require('b4a')
+const multibase = require('jlinx-util/multibase')
+const { isPublicKey } = require('jlinx-util')
 
 const debug = Debug('jlinx:client:remotehost')
 
@@ -37,11 +39,17 @@ module.exports = class RemoteHost {
     })
     const json = await response.json()
     debug(json)
-    const { publicKey } = json
-    if (!publicKey) {
-      throw new Error(`failed to get public key from ${this.url}`)
+    let { publicKey } = json
+    try{
+      debug({ publicKey })
+      publicKey = multibase.toBuffer(publicKey)
+      debug({ publicKey })
+      if (!isPublicKey(publicKey)) throw new Error('invalid')
+      this.publicKey = publicKey
+    }catch(error){
+      debug(`error parsing publicKey`, error)
+      throw new Error(`invalid publicKey from ${this.url}`)
     }
-    this.publicKey = publicKey
     debug('ready')
   }
 

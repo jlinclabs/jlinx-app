@@ -4,8 +4,7 @@ const Identifiers = require('../Identifiers')
 const Chat = require('../Chat')
 
 test('Chat', async (t, createClient) => {
-
-  async function createActor(){
+  async function createActor () {
     const client = await createClient()
     client.identifiers = new Identifiers(client)
     client.chat = new Chat(client)
@@ -31,9 +30,9 @@ test('Chat', async (t, createClient) => {
     messages: [
       {
         author: bob.chatRoom1Membership.id,
-        content: 'huh looks like nobody is here',
+        content: 'huh looks like nobody is here'
       }
-    ],
+    ]
   })
 
   const alice = await createActor()
@@ -47,8 +46,6 @@ test('Chat', async (t, createClient) => {
 
   console.log('bob.chatRoom1', {
     state: bob.chatRoom1.state,
-    events: bob.chatRoom1.events,
+    events: bob.chatRoom1.events
   })
-
-
 })

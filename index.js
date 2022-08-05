@@ -1,9 +1,5 @@
 const Debug = require('debug')
-
-const {
-  keyToString,
-  keyToBuffer
-} = require('jlinx-util')
+const multibase = require('jlinx-util/multibase')
 const Vault = require('jlinx-vault')
 
 const RemoteHost = require('./RemoteHost')
@@ -50,14 +46,14 @@ module.exports = class JlinxClient {
       await this.vault.keys.createSigningKeyPair()
     const ownerSigningKey = ownerSigningKeys.publicKey
     const ownerSigningKeyProof = await ownerSigningKeys.sign(
-      keyToBuffer(this.host.publicKey)
+      this.host.publicKey
     )
     const id = await this.host.create({
       ownerSigningKey,
       ownerSigningKeyProof
     })
     await this.vault.docs.put(id, {
-      ownerSigningKey: keyToString(ownerSigningKey),
+      ownerSigningKey: multibase.encode(ownerSigningKey),
       writable: true,
       length: 0
     })
@@ -80,7 +76,7 @@ module.exports = class JlinxClient {
     const docRecord = await this.vault.docs.get(id)
     debug('get', { id, docRecord })
     const ownerSigningKeys = (docRecord && docRecord.ownerSigningKey)
-      ? await this.vault.keys.get(keyToBuffer(docRecord.ownerSigningKey))
+      ? await this.vault.keys.get(multibase.toBuffer(docRecord.ownerSigningKey))
       : undefined
     debug('get', { id, ownerSigningKeys })
     const doc = await Document.open({

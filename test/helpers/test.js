@@ -4,10 +4,10 @@ const Vault = require('jlinx-vault')
 const JlinxClient = require('../..')
 
 const {
-  createTestnet: _createTestnet,
+  createTestnet: _createTestnet
 } = helpers
 
-helpers.createTestnet = async function(...args){
+helpers.createTestnet = async function (...args) {
   const testnet = await _createTestnet(...args)
   testnet.createJlinxClient = async (hostUrl) => {
     if (!hostUrl) hostUrl = testnet.hosts.values()[0].url
@@ -119,10 +119,6 @@ module.exports = helpers
 //   }
 //   return values
 // }
-
-
-
-
 
 // // const Debug = require('debug')
 // // const tape = require('tape-promise').default(require('tape'))

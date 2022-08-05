@@ -121,9 +121,6 @@ test('sync diff host', async (t) => {
     'block two'
   ])
 
-  console.log('NODE', host1.jlinx.node.cores)
-  console.log('_replicationStreams', host1.jlinx.node.cores._replicationStreams)
-
   t.alike(doc1.length, 2)
   t.alike(doc2.length, 0)
 
@@ -141,19 +138,19 @@ test('sync diff host', async (t) => {
   t.alike(doc2.length, 4)
 
   for (const doc of [doc1, doc2]) {
-    t.deepEqual(
+    t.alike(
       (await doc.get(0)).toString(),
       'block one'
     )
-    t.deepEqual(
+    t.alike(
       (await doc.get(1)).toString(),
       'block two'
     )
-    t.deepEqual(
+    t.alike(
       (await doc.get(2)).toString(),
       'block three'
     )
-    t.deepEqual(
+    t.alike(
       (await doc.get(3)).toString(),
       'block four'
     )

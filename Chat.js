@@ -29,7 +29,6 @@ module.exports = class Chat {
 }
 
 class ChatRoom extends EventMachine {
-
   constructor (doc, chat) {
     super(doc)
     this._chat = chat
@@ -38,7 +37,7 @@ class ChatRoom extends EventMachine {
   initialState () {
     return {
       memberIds: new Set(),
-      messages: [],
+      messages: []
     }
   }
 
@@ -50,7 +49,7 @@ class ChatRoom extends EventMachine {
     await this.appendEvent('memberKicked', { memberId })
   }
 
-  async createMembership(identifier){
+  async createMembership (identifier) {
     const doc = await this._chat.jlinx.create()
     return await ChatRoomMember.create(doc, this, identifier)
   }
@@ -62,7 +61,7 @@ ChatRoom.events = {
     schema: {
       type: 'object',
       properties: {
-        memberId: { type: 'string' },
+        memberId: { type: 'string' }
       },
       required: ['memberId'],
       additionalProperties: false
@@ -76,7 +75,7 @@ ChatRoom.events = {
       memberIds.add(memberId)
       return { ...state, memberIds }
     },
-    addEventStream({ memberId }){
+    addEventStream ({ memberId }) {
       const member = new ChatRoomMember('...')
       return member
     }
@@ -86,7 +85,7 @@ ChatRoom.events = {
     schema: {
       type: 'object',
       properties: {
-        memberId: { type: 'string' },
+        memberId: { type: 'string' }
       },
       required: ['memberId'],
       additionalProperties: false
@@ -100,13 +99,11 @@ ChatRoom.events = {
       memberIds.delete(memberId)
       return { ...state, memberIds }
     },
-    removeEventStream({ memberId }){
+    removeEventStream ({ memberId }) {
       return memberId
-
     }
   }
 }
-
 
 class ChatRoomMember extends EventMachine {
   constructor (doc, chatRoom, identifier) {
@@ -125,13 +122,11 @@ class ChatRoomMember extends EventMachine {
       indent + ')'
   }
 
-  async createMessage(content){
+  async createMessage (content) {
     await this.appendEvent('createdMessage', { content })
     await this._chatRoom.update()
   }
-
 }
-
 
 ChatRoomMember.events = {
 
@@ -139,7 +134,7 @@ ChatRoomMember.events = {
     schema: {
       type: 'object',
       properties: {
-        content: { type: 'string' },
+        content: { type: 'string' }
       },
       required: ['content'],
       additionalProperties: false
@@ -147,13 +142,13 @@ ChatRoomMember.events = {
     validate (state, { content }) {
       if (typeof content !== 'string') return 'content must be a string'
       if (content.trim().length === 0) return 'cannot be blank'
-    },
+    }
     // apply (state, message) {
     //   const messages = [...state.messages]
     //   messages.push(message)
     //   return { ...state, messages }
     // }
-  },
+  }
 
   // updatedMessage: {
 
