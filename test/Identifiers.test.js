@@ -4,10 +4,11 @@ const { createSigningKeyPair } = require('./helpers/crypto.js')
 const Identifiers = require('../Identifiers')
 const { didToPublicKey, publicKeyToDidKey } = require('../Identifiers')
 
-test('didToPublicKey', async (t) => {
+test('did:key:xxxx <-> publicKey', async (t) => {
   const { publicKey } = await createSigningKeyPair('to_and_from_public_keys')
   const did = publicKeyToDidKey(publicKey)
-  console.log({ did })
+  t.is(did, 'did:key:f1539dae87f24f2cd71bce16b5fba4eeb46e3e7597d6958c3f7a71d73ac608f58')
+  t.alike(didToPublicKey(did), publicKey)
 })
 
 test('creating a did document', async (t) => {
@@ -48,30 +49,30 @@ test('creating a did document', async (t) => {
       'https://w3id.org/security/suites/ed25519-2020/v1',
       'https://w3id.org/security/suites/x25519-2020/v1'
     ],
-    id: 'did:key:fff4d22a13100c6050c7d5542511b0154759740a825715d17d2daf402c0a8f9cf8ae1',
+    id: 'did:key:f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1',
     verificationMethod: [{
-      id: 'did:key:fff4d22a13100c6050c7d5542511b0154759740a825715d17d2daf402c0a8f9cf8ae1#8E2UukTTnT2yxRTXNFXbCxt4TMCKbKgUB1G9WprxZjap',
+      id: 'did:key:f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1#f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1',
       type: 'Ed25519VerificationKey2020',
-      controller: 'did:key:fff4d22a13100c6050c7d5542511b0154759740a825715d17d2daf402c0a8f9cf8ae1',
-      publicKeyMultibase: '8E2UukTTnT2yxRTXNFXbCxt4TMCKbKgUB1G9WprxZjap'
+      controller: 'did:key:f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1',
+      publicKeyMultibase: 'f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1'
     }],
     authentication: [
-      'did:key:fff4d22a13100c6050c7d5542511b0154759740a825715d17d2daf402c0a8f9cf8ae1#8E2UukTTnT2yxRTXNFXbCxt4TMCKbKgUB1G9WprxZjap'
+      'did:key:f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1#f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1'
     ],
     assertionMethod: [
-      'did:key:fff4d22a13100c6050c7d5542511b0154759740a825715d17d2daf402c0a8f9cf8ae1#8E2UukTTnT2yxRTXNFXbCxt4TMCKbKgUB1G9WprxZjap'
+      'did:key:f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1#f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1'
     ],
     capabilityDelegation: [
-      'did:key:fff4d22a13100c6050c7d5542511b0154759740a825715d17d2daf402c0a8f9cf8ae1#8E2UukTTnT2yxRTXNFXbCxt4TMCKbKgUB1G9WprxZjap'
+      'did:key:f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1#f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1'
     ],
     capabilityInvocation: [
-      'did:key:fff4d22a13100c6050c7d5542511b0154759740a825715d17d2daf402c0a8f9cf8ae1#8E2UukTTnT2yxRTXNFXbCxt4TMCKbKgUB1G9WprxZjap'
+      'did:key:f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1#f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1'
     ],
     keyAgreement: [{
-      id: 'did:key:fff4d22a13100c6050c7d5542511b0154759740a825715d17d2daf402c0a8f9cf8ae1#8E2UukTTnT2yxRTXNFXbCxt4TMCKbKgUB1G9WprxZjap',
+      id: 'did:key:f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1#f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1',
       type: 'X25519KeyAgreementKey2020',
-      controller: 'did:key:fff4d22a13100c6050c7d5542511b0154759740a825715d17d2daf402c0a8f9cf8ae1',
-      publicKeyMultibase: '8E2UukTTnT2yxRTXNFXbCxt4TMCKbKgUB1G9WprxZjap'
+      controller: 'did:key:f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1',
+      publicKeyMultibase: 'f6b5808a6fdba1b9ae4d2fbc43f4bf56fc24aec6c2ddc9d82e77c50a8f9cf8ae1'
     }],
     services: []
   }
@@ -81,7 +82,7 @@ test('creating a did document', async (t) => {
     expectedDidDocument
   )
 
-  t.is(identifier.events, [])
+  t.alike(identifier.events, [])
 
   await identifier.addService({
     id: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05',
@@ -89,7 +90,7 @@ test('creating a did document', async (t) => {
     serviceEndpoint: 'http://example.com'
   })
 
-  t.is(identifier.state, {
+  t.alike(identifier.state, {
     services: [
       {
         id: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05',
@@ -113,7 +114,7 @@ test('creating a did document', async (t) => {
     }
   )
 
-  t.is(identifier.events, [
+  t.alike(identifier.events, [
     {
       '@event': 'serviceAdded',
       service: {
@@ -143,7 +144,7 @@ test('creating a did document', async (t) => {
     serviceEndpoint: 'http://profilerator.me'
   })
 
-  t.is(identifier.state, {
+  t.alike(identifier.state, {
     services: [
       {
         id: 'c23a5415df0bff723ff056e9832b2034619a25941f27ebea08a5cf044a525133',
@@ -187,7 +188,7 @@ test('creating a did document', async (t) => {
     }
   )
 
-  t.is(identifier.events, [
+  t.alike(identifier.events, [
     {
       '@event': 'serviceAdded',
       service: {
@@ -227,38 +228,3 @@ test('creating a did document', async (t) => {
   ])
 })
 
-// test('did <-> publicKey', async (t, createClient) => {
-//   const client = await createClient()
-//   const { did } = await client.identifiers.createDidKey()
-//   const publicKey = didToPublicKey(did)
-//   t.alike(did, publicKeyToDid(publicKey))
-//   t.alike(
-//     publicKey.toString('hex'),
-//     didToPublicKey(did).toString('hex')
-//   )
-// })
-
-// test('jlinx.identifiers.createDidKey', async (t, createClient) => {
-//   const client1 = await createClient(t.jlinxHosts[0].url)
-//   const client2 = await createClient(t.jlinxHosts[1].url)
-//   t.notEquals(client1.host.url, client2.host.url)
-
-//   const identifierA = await client1.identifiers.createDidKey()
-//   t.alikes(identifierA.constructor.name, 'Identifier')
-//   t.ok(identifierA.did.startsWith('did:key:'))
-//   t.ok(identifierA.canSign)
-
-//   const identifierA1 = await client2.identifiers.get(identifierA.did)
-//   t.alike(identifierA1.did, identifierA.did)
-//   t.ok(!identifierA1.canSign)
-
-//   t.alikes(
-//     identifierA.publicKey.toString('hex'),
-//     identifierA1.publicKey.toString('hex')
-//   )
-
-//   const identifierB = await client2.identifiers
-//     .get('did:key:fff4d22a13100c6050c7d5542511b0154759740a825715d17d2daf402c0a8f9cf8ae1')
-
-//   t.end()
-// })

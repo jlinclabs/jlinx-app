@@ -174,10 +174,9 @@ function didToPublicKey (did) {
 }
 
 function signingKeyToDidDocument (publicKey, opts = {}) {
-  console.log('!!!!signingKeyToDidDocument', { publicKey })
   publicKey = multibase.toBuffer(publicKey)
   const did = publicKeyToDidKey(publicKey)
-  const publicKeyMultibase = did.split('did:key')[1]
+  const publicKeyMultibase = did.split('did:key:')[1]
   // const publicKeyMultibase = multibase.encode(publicKey)
   const didDocument = {
     '@context': [
