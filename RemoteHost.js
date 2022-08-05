@@ -40,14 +40,14 @@ module.exports = class RemoteHost {
     const json = await response.json()
     debug(json)
     let { publicKey } = json
-    try{
+    try {
       debug({ publicKey })
       publicKey = multibase.toBuffer(publicKey)
       debug({ publicKey })
       if (!isPublicKey(publicKey)) throw new Error('invalid')
       this.publicKey = publicKey
-    }catch(error){
-      debug(`error parsing publicKey`, error)
+    } catch (error) {
+      debug('error parsing publicKey', error)
       throw new Error(`invalid publicKey from ${this.url}`)
     }
     debug('ready')
