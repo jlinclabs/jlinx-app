@@ -87,6 +87,7 @@ module.exports = class RemoteHost {
   async getHeader (id) {
     // TODO validate id
     // /^\/([A-Za-z0-9\-_]{43})$/
+    debug('getHeader', { id })
     const url = this._url(id)
     const response = await fetch(url, {
       method: 'get',
@@ -95,7 +96,7 @@ module.exports = class RemoteHost {
       }
     })
     const header = await response.json()
-    debug({ id, header })
+    debug('getHeader got', { id, header })
     return header
   }
 

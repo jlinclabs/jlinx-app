@@ -43,7 +43,7 @@ class Ledger {
   get signingKey () {
     return (
       this.doc._header?.signingKey ||
-      multibase.encode(this.doc.ownerSigningKeys?.publicKey)
+      this.doc.ownerSigningKeys && multibase.encode(this.doc.ownerSigningKeys.publicKey)
     )
   }
 
@@ -118,14 +118,14 @@ class Ledger {
     return event
   }
 
-  // TODO only check signature on first get
-  async getEvent (index, verify = false) {
-    if (index > this.length - 1) return
-    const buffer = await this.doc.get(index)
-    const event = await this._unpackEvent(buffer, index > 0 && verify)
-    debug('getEvent', { index, event })
-    return event
-  }
+  // // TODO only check signature on first get
+  // async getEvent (index, verify = false) {
+  //   if (index > this.length - 1) return
+  //   const buffer = await this.doc.get(index)
+  //   const event = await this._unpackEvent(buffer, index > 0 && verify)
+  //   debug('getEvent', { index, event })
+  //   return event
+  // }
 
   _getEventSpec (eventName) {
     return this.constructor.events[eventName]
@@ -134,7 +134,7 @@ class Ledger {
   async appendEvent (eventName, payload) {
     const eventSpec = this._getEventSpec(eventName)
     if (!eventSpec) throw new Error(`invalid event "${eventName}"`)
-    console.log({ eventSpec })
+    // console.log({ eventSpec })
     if (!eventSpec.schemaValidate(payload)) {
       const errors = eventSpec.schemaValidate.errors
       // console.error(`invalid event payload`, {eventName, payload, errors})

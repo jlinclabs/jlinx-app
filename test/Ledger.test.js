@@ -45,6 +45,7 @@ test('Ledger', async (t) => {
   const [host1, host2] = await createHttpServers(2)
   const client = await createJlinxClient(host1.url)
   const ledger = await client.create({ class: Ledger })
+  console.log({ ledger })
 
   t.is(ledger.length, 1)
   t.is(ledger.writable, true)
@@ -87,13 +88,9 @@ test('Ledger', async (t) => {
     { '@event': 'Opened Document' }
   ])
 
-  t.is(ledger.length, 2)
-
-  t.alike(await ledger.getEvent(0, true), expectedHeader)
-  t.alike(await ledger.getEvent(1, true), { '@event': 'Opened Document' })
-
   const client2 = await createJlinxClient(host2.url)
   const ledgerCopy = await client2.get(ledger.id, { class: Ledger })
+  console.log({ ledgerCopy })
 
   t.alike(
     inspect(ledgerCopy),
@@ -109,16 +106,36 @@ test('Ledger', async (t) => {
     )
   )
 
-  t.is(copyOfLedger.length, 3)
-  t.is(copyOfLedger.writable, false)
-
-  t.alike(await copyOfLedger.get(0, true), expectedHeader)
-  t.alike(await copyOfLedger.get(1, true), { '@event': 'Opened Document' })
-  t.alike(await copyOfLedger.events(), [
+  t.is(ledgerCopy.id, ledger.id)
+  t.is(ledgerCopy.length, 2)
+  t.is(ledgerCopy.writable, false)
+  console.log('_HEADER?', await ledgerCopy._header)
+  console.log('HEADER?', await ledgerCopy.header())
+  t.alike(
+    await ledgerCopy.header(),
+    expectedHeader
+  )
+  t.alike(await ledgerCopy.events(), [
     { '@event': 'Opened Document' }
   ])
 
   await ledger.closeDocument()
+  t.is(ledger.length, 3)
+  t.alike(await ledger.events(), [
+    { '@event': 'Opened Document' },
+    { '@event': 'Closed Document' }
+  ])
+
+
+  t.is(ledgerCopy.length, 2)
+  await ledgerCopy.update()
+  t.is(ledgerCopy.length, 3)
+  t.alike(await ledgerCopy.events(), [
+    { '@event': 'Opened Document' },
+    { '@event': 'Closed Document' }
+  ])
+
+
 })
 
 

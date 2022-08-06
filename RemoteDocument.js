@@ -38,18 +38,25 @@ module.exports = class RemoteDocument {
   }
 
   async header () {
-    if (!this._header) { this._header = await this.host.getHeader(this.id) }
+    if (!this._header) await this.update()
     return this._header
   }
 
   async update () {
-    delete this._header
-    const header = await this.header()
-    if (typeof header.length !== 'number') {
-      console.error('length missing from header', header)
+    const fullHeader = await this.host.getHeader(this.id)
+    debug('UPDATE', this, fullHeader)
+    const { id, length, ...header } = fullHeader
+    // TODO restore this after fixing bug in host/http-server
+    // if (id !== this.id) {
+    //   console.error('id mismatch')
+    //   throw new Error('id mismatch')
+    // }
+    if (typeof length !== 'number') {
+      console.error('length missing from header')
       throw new Error('length missing from header')
     }
-    this.length = header.length || 0
+    this.length = length
+    this._header = header
   }
 
   async create (opts = {}) {
