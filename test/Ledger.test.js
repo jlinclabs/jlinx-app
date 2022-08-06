@@ -92,7 +92,6 @@ test('Ledger', async (t) => {
   t.alike(await ledger.getEvent(0, true), expectedHeader)
   t.alike(await ledger.getEvent(1, true), { '@event': 'Opened Document' })
 
-
   const client2 = await createJlinxClient(host2.url)
   const ledgerCopy = await client2.get(ledger.id, { class: Ledger })
 
@@ -118,6 +117,8 @@ test('Ledger', async (t) => {
   t.alike(await copyOfLedger.events(), [
     { '@event': 'Opened Document' }
   ])
+
+  await ledger.closeDocument()
 })
 
 

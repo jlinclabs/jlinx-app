@@ -268,6 +268,14 @@ class Ledger {
   async openDocument() {
     await this.appendEvent('Opened Document', {})
   }
+
+  async closeDocument() {
+    await this.appendEvent('Closed Document', {})
+  }
+
+  async moveDocument() {
+    await this.appendEvent('Moved Document', {})
+  }
 }
 
 module.exports = Ledger
