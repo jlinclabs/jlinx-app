@@ -1,6 +1,6 @@
 const { inspect } = require('util')
 const multibase = require('jlinx-util/multibase')
-const { test, createTestnet } = require('./helpers/test.js')
+const { test, createJlinxClient } = require('./helpers/test.js')
 const Ledger = require('../Ledger')
 
 test('subclassing', async (t) => {
@@ -41,16 +41,14 @@ test('subclassing', async (t) => {
 })
 
 test('Ledger', async (t) => {
-  const { createHttpServers, createJlinxClient } = await createTestnet(t)
-  const [host1, host2] = await createHttpServers(2)
-  const client = await createJlinxClient(host1.url)
+  // const { createHttpServers, createJlinxClient } = await createTestnet(t)
+  // const [host1, host2] = await createHttpServers(2)
+  const client = await createJlinxClient(t)
   const ledger = await client.create({ class: Ledger })
-  console.log({ ledger })
 
   t.is(ledger.length, 1)
   t.is(ledger.writable, true)
   t.is(ledger.signingKey, multibase.encode(ledger.doc.ownerSigningKeys.publicKey))
-
 
   t.alike(
     inspect(ledger),
@@ -84,13 +82,19 @@ test('Ledger', async (t) => {
   await ledger.openDocument()
   t.is(ledger.length, 2)
 
-  t.alike(await ledger.events(), [
-    { '@event': 'Opened Document' }
-  ])
+  const expectedEvents = []
+  {
+    const events = await ledger.events()
+    t.is(events.length, 1)
+    t.alike(events[0], {
+      '@event': 'Opened Document',
+      '@eventId': events[0]['@eventId'],
+    })
+    expectedEvents.push(events[0])
+  }
 
-  const client2 = await createJlinxClient(host2.url)
+  const client2 = await createJlinxClient(t)
   const ledgerCopy = await client2.get(ledger.id, { class: Ledger })
-  console.log({ ledgerCopy })
 
   t.alike(
     inspect(ledgerCopy),
@@ -109,39 +113,37 @@ test('Ledger', async (t) => {
   t.is(ledgerCopy.id, ledger.id)
   t.is(ledgerCopy.length, 2)
   t.is(ledgerCopy.writable, false)
-  console.log('_HEADER?', await ledgerCopy._header)
-  console.log('HEADER?', await ledgerCopy.header())
+
   t.alike(
     await ledgerCopy.header(),
     expectedHeader
   )
-  t.alike(await ledgerCopy.events(), [
-    { '@event': 'Opened Document' }
-  ])
+  t.alike(await ledgerCopy.events(), expectedEvents)
 
   await ledger.closeDocument()
   t.is(ledger.length, 3)
-  t.alike(await ledger.events(), [
-    { '@event': 'Opened Document' },
-    { '@event': 'Closed Document' }
-  ])
+  {
+    const events = await ledger.events()
+    t.is(events.length, 2)
+    t.alike(events[1], {
+      '@event': 'Closed Document',
+      '@eventId': events[1]['@eventId'],
+    })
+    expectedEvents.push(events[1])
+  }
 
+  t.alike(await ledger.events(), expectedEvents)
 
   t.is(ledgerCopy.length, 2)
   await ledgerCopy.update()
   t.is(ledgerCopy.length, 3)
-  t.alike(await ledgerCopy.events(), [
-    { '@event': 'Opened Document' },
-    { '@event': 'Closed Document' }
-  ])
-
-
+  t.alike(await ledgerCopy.events(), expectedEvents)
 })
 
 
-test('Chest as EventMachine', async (t) => {
+test('Chest as subclass of Ledger', async (t) => {
   class Chest extends Ledger {
-    initialState () {
+    getInitialState () {
       return {
         open: false,
         items: []
@@ -149,27 +151,24 @@ test('Chest as EventMachine', async (t) => {
     }
 
     async open (...__passingJustToTestErrorCase) {
-      await this.events.append('opened', ...__passingJustToTestErrorCase)
+      await this.appendEvent('Opened Chest', ...__passingJustToTestErrorCase)
     }
 
     async close () {
-      await this.events.append('closed')
+      await this.appendEvent('Closed Chest')
     }
 
     async addItem (item) {
-      await this.events.append('itemAdded', { item })
+      await this.appendEvent('Added Item', { item })
     }
 
     async removeItem (itemId) {
-      await this.events.append('itemRemoved', { itemId })
+      await this.appendEvent('Removed Item', { itemId })
     }
   }
 
-  // console.log({ Chest })
-
-  Chest.extendEvents({
-    opened: {
-      schema: null,
+  Chest.events = {
+    'Opened Chest': {
       validate (state) {
         if (state.open) return 'cannot open already open chest'
       },
@@ -177,8 +176,7 @@ test('Chest as EventMachine', async (t) => {
         return { ...state, open: true }
       }
     },
-    closed: {
-      schema: null,
+    'Closed Chest': {
       validate (state) {
         if (!state.open) return 'cannot close unopen chest'
       },
@@ -186,7 +184,7 @@ test('Chest as EventMachine', async (t) => {
         return { ...state, open: false }
       }
     },
-    itemAdded: {
+    'Added Item': {
       schema: {
         type: 'object',
         properties: {
@@ -215,7 +213,7 @@ test('Chest as EventMachine', async (t) => {
         return state
       }
     },
-    itemRemoved: {
+    'Removed Item': {
       schema: {
         type: 'object',
         properties: {
@@ -234,20 +232,30 @@ test('Chest as EventMachine', async (t) => {
         return state
       }
     }
-  })
+  }
+
+  const client = await createJlinxClient(t)
+
+  const chest = await client.create({ class: Chest })
+
+  t.alike(
+    inspect(chest),
+    (
+      'Chest(\n' +
+      `  id: ${chest.id}\n` +
+      '  writable: true\n' +
+      '  length: 1\n' +
+      '  contentType: application/json\n' +
+      `  host: ${client.host.url}\n` +
+      `  signingKey: ${chest.signingKey}\n` +
+      ')'
+    )
+  )
 
 
-  const client = await createJinxClient(t)
-
-  const chest = await client.create({
-    class: Chest
-  })
-  // const chest = await Chest.create(doc)
-  console.log({ chest })
-
-  t.alike(await chest.events(), [
-
-  ])
+  await chest.update()
+  t.is(chest.length, 1)
+  t.alike(await chest.events(), [])
 
   t.alike(chest.state, {
     open: false,
@@ -258,10 +266,23 @@ test('Chest as EventMachine', async (t) => {
     async () => {
       await chest.open({ bad: 'payload' })
     },
-    /invalid event payload: must be null or undefined/
+    /invalid event payload: must NOT have additional properties/
   )
 
   await chest.open()
+  t.is(chest.length, 2)
+
+  let expectedEvents = []
+  {
+    const events = await chest.events()
+    t.is(events.length, 1)
+    t.alike(events[0], {
+      '@event': 'Opened  Document',
+      '@eventId': events[0]['@eventId'],
+    })
+    expectedEvents.push(events[0])
+  }
+
 
   t.alike(chest.state, {
     open: true,
@@ -275,10 +296,28 @@ test('Chest as EventMachine', async (t) => {
     /invalid event payload: must have required property 'item'/
   )
 
+  t.is(chest.length, 2)
+  t.alike(chest.state, {
+    open: true,
+    items: []
+  })
+
   await chest.addItem({
     id: 'sword123456',
     desc: 'Iron Sword',
     magic: false
+  })
+
+  t.is(chest.length, 3)
+  t.alike(chest.state, {
+    open: true,
+    items: [
+      {
+        id: 'sword123456',
+        desc: 'Iron Sword',
+        magic: false
+      }
+    ]
   })
 
   t.alike(chest.state, {
@@ -293,17 +332,6 @@ test('Chest as EventMachine', async (t) => {
   })
 
   await chest.close()
-
-  t.alike(chest.state, {
-    open: false,
-    items: [
-      {
-        id: 'sword123456',
-        desc: 'Iron Sword',
-        magic: false
-      }
-    ]
-  })
 
   await t.exception(
     async () => {
@@ -378,41 +406,52 @@ test('Chest as EventMachine', async (t) => {
     ]
   })
 
-  t.alike(chest.events, [
-    {
-      '@event': 'opened'
-    },
-    {
-      '@event': 'itemAdded',
-      item: {
-        desc: 'Iron Sword',
-        id: 'sword123456',
-        magic: false
+  {
+    const events = await chest.events()
+    t.alike(await chest.events(), [
+      {
+        '@event': 'Opened Chest',
+        '@eventId': events[0]['@eventId'],
+      },
+      {
+        '@event': 'Added Item',
+        '@eventId': events[1]['@eventId'],
+        item: {
+          desc: 'Iron Sword',
+          id: 'sword123456',
+          magic: false
+        }
+      },
+      {
+        '@event': 'Closed Chest',
+        '@eventId': events[2]['@eventId'],
+      },
+      {
+        '@event': 'Opened Chest',
+        '@eventId': events[3]['@eventId'],
+      },
+      {
+        '@event': 'Added Item',
+        '@eventId': events[4]['@eventId'],
+        item: {
+          desc: 'Iron Sheild',
+          id: 'shield9876',
+          magic: false
+        }
+      },
+      {
+        '@event': 'Closed Chest',
+        '@eventId': events[5]['@eventId'],
+      },
+      {
+        '@event': 'Opened Chest',
+        '@eventId': events[6]['@eventId'],
+      },
+      {
+        '@event': 'Removed Item',
+        '@eventId': events[7]['@eventId'],
+        itemId: 'shield9876'
       }
-    },
-    {
-      '@event': 'closed'
-    },
-    {
-      '@event': 'opened'
-    },
-    {
-      '@event': 'itemAdded',
-      item: {
-        desc: 'Iron Sheild',
-        id: 'shield9876',
-        magic: false
-      }
-    },
-    {
-      '@event': 'closed'
-    },
-    {
-      '@event': 'opened'
-    },
-    {
-      '@event': 'itemRemoved',
-      itemId: 'shield9876'
-    }
-  ])
+    ])
+  }
 })

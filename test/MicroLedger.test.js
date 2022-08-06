@@ -1,4 +1,4 @@
-const { test, createJinxClient } = require('./helpers/test.js')
+const { test, createJlinxClient } = require('./helpers/test.js')
 
 const MicroLedger = require('../MicroLedger')
 
@@ -100,7 +100,7 @@ test('Chest as EventMachine', async (t) => {
   })
 
 
-  const client = await createJinxClient(t)
+  const client = await createJlinxClient(t)
 
   const chest = await client.create({
     class: Chest

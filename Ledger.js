@@ -2,10 +2,17 @@ const Debug = require('debug')
 const b4a = require('b4a')
 const jsonCanonicalize = require('canonicalize')
 const multibase = require('jlinx-util/multibase')
-const { verify } = require('jlinx-util')
+const jtil = require('jlinx-util')
 const { compileEvents } = require('./events')
 const debug = Debug('jlinx:client:Ledger')
 
+/**
+ * Ledger
+ *
+ * generally deals with one stream unless that stream
+ * was moved in-which-case it deals with multiple streams
+ * in linear/sequential order
+ */
 class Ledger {
 
   static get events () {
@@ -96,10 +103,10 @@ class Ledger {
 
   async _verify (event) {
     await this.ready()
-    const { __signature, ...signed } = event
-    return await verify(
+    const { '@signature': signature, ...signed } = event
+    return await jtil.verify(
       b4a.from(jsonCanonicalize(signed)),
-      b4a.from(__signature, 'hex'),
+      b4a.from(signature, 'hex'),
       multibase.toBuffer(this.signingKey)
     )
   }
@@ -109,12 +116,33 @@ class Ledger {
     if (verify) {
       const valid = await this._verify(event)
       if (!valid) {
+        debug('INVALID EVENT SIGNATURE', event)
         throw new Error(
           `ledger event signature invalid. index=${index}`
         )
       }
     }
-    delete event.__signature
+    const {
+      '@event': eventName,
+      '@eventId': eventId,
+      '@signature': signature,
+      ...payload
+    } = event
+
+    const eventSpec = this._getEventSpec(eventName)
+    if (!eventSpec || !eventSpec.schemaValidate(payload)) {
+      const errors = eventSpec.schemaValidate.errors
+      debug('INVALID EVENT: doesnt match schema', { event, payload, errors })
+
+      throw new Error(
+        `ledger event doesnt match schema ${eventId}: ` +
+        errors.map(e =>
+          (e.instancePath ? `${e.instancePath} ` : '') + e.message
+        ).join(', ')
+      )
+    }
+
+    delete event['@signature']
     return event
   }
 
@@ -131,7 +159,7 @@ class Ledger {
     return this.constructor.events[eventName]
   }
 
-  async appendEvent (eventName, payload) {
+  async appendEvent (eventName, payload = {}) {
     const eventSpec = this._getEventSpec(eventName)
     if (!eventSpec) throw new Error(`invalid event "${eventName}"`)
     // console.log({ eventSpec })
@@ -152,51 +180,33 @@ class Ledger {
       if (errorMessage) throw new Error(`${errorMessage}`)
     }
 
-    let event = { ...payload, '@event': eventName }
+    let event = {
+      ...payload,
+      '@event': eventName,
+      '@eventId': jtil.createRandomString(5),
+    }
     const json = b4a.from(jsonCanonicalize(event))
     const signature = await this.doc.ownerSigningKeys.sign(json)
     const signedEvent = JSON.stringify({
       ...JSON.parse(json),
-      __signature: signature.toString('hex')
+      '@signature': signature.toString('hex')
     })
 
     await this.doc.append([signedEvent])
     await this.update()
-
-
-    // const signedEvents = []
-    // for (const event of events) {
-    //   const json = b4a.from(jsonCanonicalize(event))
-    //   const signature = await this.doc.ownerSigningKeys.sign(json)
-    //   const signedEvent = JSON.stringify({
-    //     ...JSON.parse(json),
-    //     __signature: signature.toString('hex')
-    //   })
-    //   signedEvents.push(b4a.from(signedEvent))
-    // }
-    // await this.doc.append(signedEvents)
-    // await this.update()
   }
 
   waitForUpdate () { return this.doc.waitForUpdate() }
 
+  // TODO return an streamable that fetches and verfies
+  // events on-demand
   async events () {
-    // // debug('events', this.id, { length: this.length })
-    // // await this.update()
     const { id, length } = this
-    // debug('events', { id, length })
-    // if (this.length === 0) return []
-    // debug('events getting', { id, length })
-    // const events = await Promise.all(
-    //   Array(this.length).fill()
-    //     .map((_, i) => this.getEvent(i))
-    // )
     const entries = await this.doc.all()
     if (entries.length !== length) {
       throw new Error('Ledger fucked up')
     }
     if (entries.length < 2) return []
-    debug('PARSING EVENTS FROM ENTIRIES', { entries })
     const events = []
     entries.shift() // remove header
     while (entries.length){
@@ -205,7 +215,7 @@ class Ledger {
       try{
         event = await this._unpackEvent(buffer, true)
       }catch(error){
-        debug('invalid event', {event, error})
+        debug('invalid event', {error})
         continue
       }
       events.push(event)
@@ -215,17 +225,20 @@ class Ledger {
     return events
   }
 
-
   async update () {
     await this.doc.update()
+    // TODO cache what event number our state was last built at and return it
+    // if our length has not grown,
+    // TODO only apply new events to cached state
+    // TODO persist state in local-only hypercore
     const events = await this.events()
-    console.log('UPDATE!', this, events)
-    let state = this.constructor.getInitialState()
+
+    let state = await this.getInitialState()
     this._events = []
 
     while (events.length > 0) {
       const event = events.shift()
-      console.log('UPDATE LOOP', { event })
+
       this._events.push(event)
       const { '@event': eventName, ...payload } = event
       const eventSpec = this._getEventSpec(eventName)
@@ -236,17 +249,10 @@ class Ledger {
       if (eventSpec.apply) {
         state = eventSpec.apply(state, payload)
       }
-      if (eventSpec.addEventStream) {
-        const eventStream = eventSpec.addEventStream(payload, state)
-        events = mergeEvents(events, eventStream.events)
-      }
-      if (eventSpec.removeEventStream) {
-        const id = eventSpec.removeEventStream(payload, state)
-        events = purgeEvents(events, id)
-      }
     }
 
     this._state = Object.freeze(state) // TODO deep freeze
+    debug('updated', this, this._state)
     return state
   }
 

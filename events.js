@@ -11,7 +11,12 @@ exports.compileEvents = function compileEvents (events) {
     try {
       spec.schemaValidate = spec.schema === null
         ? makeNullSchemaValidator()
-        : compileSchemaValidator(spec.schema)
+        : compileSchemaValidator(
+          spec.schema || {
+            type: 'object',
+            additionalProperties: false
+          }
+        )
     } catch (error) {
       throw new Error(`invalid schema for event "${eventName}": ${error}`)
     }
