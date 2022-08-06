@@ -1,141 +1,9 @@
-const { inspect } = require('util')
-const multibase = require('jlinx-util/multibase')
-const { test, createTestnet } = require('./helpers/test.js')
-const Ledger = require('../Ledger')
+const { test, createJinxClient } = require('./helpers/test.js')
 
-test('subclassing', async (t) => {
-  class Box extends Ledger {}
-  Box.events = {
-    'Opened Box': {
-      schema: {},
-      apply(){}
-    },
-  }
-
-  t.alike(Box.events, {
-    ...Ledger.events,
-    'Opened Box': Box.events['Opened Box']
-  })
-  t.exception(
-    () => { Box.events = {} },
-    `events for Box already locked in. Subclass to extend`
-  )
-
-  class Chest extends Box {}
-  Chest.events = {
-    'Locked Chest': {
-      schema: {},
-      apply(){}
-    },
-  }
-
-  t.alike(Chest.events, {
-    ...Box.events,
-    'Locked Chest': Chest.events['Locked Chest']
-  })
-
-  t.exception(
-    () => { Chest.events = {} },
-    `events for Chest already locked in. Subclass to extend`
-  )
-})
-
-test('Ledger', async (t) => {
-  const { createHttpServers, createJlinxClient } = await createTestnet(t)
-  const [host1, host2] = await createHttpServers(2)
-  const client = await createJlinxClient(host1.url)
-  const ledger = await client.create({ class: Ledger })
-  t.is(ledger.length, 1)
-  t.is(ledger.writable, true)
-
-  t.is(ledger.signingKey, multibase.encode(ledger.doc.ownerSigningKeys.publicKey))
-  const expectedHeader = {
-    contentType: 'application/json',
-    host: client.host.url,
-    signingKey: ledger.signingKey
-  }
-  t.alike(
-    await ledger.header(),
-    expectedHeader
-  )
-  t.alike(
-    JSON.parse(await ledger.doc.get(0)),
-    expectedHeader
-  )
-
-  await ledger.appendEvents([
-    { event: 'one', index: 1 },
-    { event: 'two', index: 2 }
-  ])
-
-  t.is(ledger.length, 3)
-
-  t.alike(await ledger.get(0, true), expectedHeader)
-  t.alike(await ledger.get(1, true), { event: 'one', index: 1 })
-  t.alike(await ledger.get(2, true), { event: 'two', index: 2 })
-
-  t.alike(
-    await ledger.events(),
-    [
-      expectedHeader,
-      { event: 'one', index: 1 },
-      { event: 'two', index: 2 }
-    ]
-  )
-
-  t.alike(
-    inspect(ledger),
-    (
-      'Ledger(\n' +
-      `  id: ${ledger.id}\n` +
-      '  writable: true\n' +
-      '  length: 3\n' +
-      '  contentType: application/json\n' +
-      `  host: ${client.host.url}\n` +
-      `  signingKey: ${ledger.signingKey}\n` +
-      ')'
-    )
-  )
-
-  const client2 = await createJlinxClient(host2.url)
-  const copyOfDoc1 = await client2.get(doc1.id)
-
-  const copyOfLedger = new Ledger(copyOfDoc1)
-  await copyOfLedger.ready()
-  t.is(copyOfLedger.length, 3)
-  t.is(copyOfLedger.writable, false)
-
-  t.alike(
-    inspect(copyOfLedger),
-    (
-      'Ledger(\n' +
-      `  id: ${ledger.id}\n` +
-      '  writable: false\n' +
-      '  length: 3\n' +
-      '  contentType: application/json\n' +
-      `  host: ${client.host.url}\n` +
-      `  signingKey: ${ledger.signingKey}\n` +
-      ')'
-    )
-  )
-
-  t.alike(await copyOfLedger.get(0, true), expectedHeader)
-  t.alike(await copyOfLedger.get(1, true), { event: 'one', index: 1 })
-  t.alike(await copyOfLedger.get(2, true), { event: 'two', index: 2 })
-
-  t.alike(
-    await copyOfLedger.events(),
-    [
-      expectedHeader,
-      { event: 'one', index: 1 },
-      { event: 'two', index: 2 }
-    ]
-  )
-})
-
+const MicroLedger = require('../MicroLedger')
 
 test('Chest as EventMachine', async (t) => {
-  class Chest extends Ledger {
+  class Chest extends MicroLedger {
     initialState () {
       return {
         open: false,
@@ -160,7 +28,7 @@ test('Chest as EventMachine', async (t) => {
     }
   }
 
-  // console.log({ Chest })
+  console.log({ Chest })
 
   Chest.extendEvents({
     opened: {

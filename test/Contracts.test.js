@@ -34,6 +34,22 @@ test('Contracts', async (t) => {
     signatureDropoffUrl: 'https://example.com/jlinx/contracts/signatures'
   })
 
+  {
+    const events = await bob.contract.events()
+    console.log({ events })
+    t.is(events.length, 1)
+    t.alike(events, [
+      {
+        // events[0]
+        jlinxHost: 'http://localhost:53543',
+        event: 'offered',
+        offerer: bob.identifier.did,
+        contractUrl: 'https://contracts.io/freemoney.md',
+        signatureDropoffUrl: 'https://example.com/jlinx/contracts/signatures'
+      }
+    ])
+  }
+
   t.alike(bob.contract.value, {
     state: 'offered',
     offerer: bob.identifier.did,

@@ -17,17 +17,21 @@ const debug = Debug('jlinx:client:EventMachine')
  *  - [ ] persist the result of merging the streams to an internal log
  *    - add a client corestore that serves as a private local cache
  */
-module.exports = class EventMachine {
-  static set events (events) {
+class MicroLedger {
+
+  static extendEvents (events) {
+
+    console.log('extendEvents', this, this._events)
+    console.dir(this.super)
     if (this._events) throw new Error(`unable to redefine events for ${this}`)
     this._events = compileEvents(events)
     debug('EventMachine events defined', this)
   }
 
-  constructor (opts) {
-    this.input = opts.input
-    this
+  constructor (doc, opts = {}) {
+    this._client = opts.client
     this._ledger = new Ledger(doc)
+    // this._events = new EventMachine
   }
 
   get _header () { return this._ledger.doc._header }
@@ -145,6 +149,85 @@ module.exports = class EventMachine {
       indent + ')'
   }
 }
+
+module.exports = MicroLedger
+
+MicroLedger.events = compileEvents({
+  'opened document': {
+    schema: {
+      type: 'object',
+      properties: {
+        "document type": {
+          type: 'string',
+        },
+        "cryptographic signing key": {
+          type: 'string',
+        },
+        // "hyperswarm id" (optional) to get the latest more agressively
+        "hyperswarm id": {
+          type: 'string',
+        },
+        // "host url" (optional) to get the latest more agressively
+        "host url": {
+          type: 'string',
+          // TODO pattern
+        },
+      },
+      required: [
+        'document type',
+        'cryptographic signing key',
+      ],
+      additionalProperties: true
+    },
+    validate (state, doc) {
+      if (doc.length > 0)
+      if (state.open) return 'cannot open already open chest'
+    },
+    apply (state) {
+      state = { ...state }
+      state.open = true
+      state.signingKey = state['cryptographic signing key']
+      return state
+    }
+  },
+  'closed document': {
+    schema: {
+      type: 'object',
+      properties: {
+      },
+      required: [
+      ],
+      additionalProperties: true
+    },
+    validate (state, doc) {
+    },
+    apply (state) {
+      // const state = { ...state }
+      // state.open = true
+      // state.signingKey = state['cryptographic signing key']
+      return state
+    }
+  },
+  'moved document': {
+    schema: {
+      type: 'object',
+      properties: {
+      },
+      required: [
+      ],
+      additionalProperties: true
+    },
+    validate (state, doc) {
+    },
+    apply (state) {
+      // const state = { ...state }
+      // state.open = true
+      // state.signingKey = state['cryptographic signing key']
+      return state
+    }
+  },
+})
+
 
 function compileEvents (events) {
   const cEvents = {}

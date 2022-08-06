@@ -104,7 +104,6 @@ Identifier.events = {
       additionalProperties: false
     },
     validate (state, event) {
-      if (!state.services) { return 'cannot add item to closed chest' }
       if (
         state.services.find(services =>
           services.id === event.service.id
@@ -132,7 +131,7 @@ Identifier.events = {
     },
     validate (state, { serviceId }) {
       const service = state.services.find(service => service.id === serviceId)
-      if (!service) { return `service is references by the did document: ${serviceId}` }
+      if (!service) { return `service is not referenced by the did document: ${serviceId}` }
     },
     apply (state, { serviceId }) {
       return {

@@ -3,9 +3,33 @@ const b4a = require('b4a')
 const jsonCanonicalize = require('canonicalize')
 const multibase = require('jlinx-util/multibase')
 const { verify } = require('jlinx-util')
+const { compileEvents } = require('./events')
 const debug = Debug('jlinx:client:Ledger')
 
-module.exports = class Ledger {
+class Ledger {
+
+  static get events () {
+    return this === Ledger
+      ? BASE_EVENTS
+      : {
+        ...Object.getPrototypeOf(this).events,
+        ...this._events,
+      }
+  }
+
+  static set events (events) {
+    if (
+      this === Ledger ||
+      // sames as superclass._events AKA not-extended
+      this._events !== Object.getPrototypeOf(this)._events
+    ){
+      throw new Error(`events for ${this.name} already locked in. Subclass to extend`)
+    }
+    this._events = compileEvents(events)
+  }
+
+  static getInitialState () { return {} }
+
   constructor (doc) {
     debug({ doc })
     this.doc = doc
@@ -16,7 +40,12 @@ module.exports = class Ledger {
   get writable () { return this.doc.writable }
   get contentType () { return this.doc._header?.contentType }
   get host () { return this.doc._header?.host }
-  get signingKey () { return this.doc._header?.signingKey }
+  get signingKey () {
+    return (
+      this.doc._header?.signingKey ||
+      multibase.encode(this.doc.ownerSigningKeys?.publicKey)
+    )
+  }
 
   [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
     let indent = ''
@@ -51,29 +80,24 @@ module.exports = class Ledger {
     await this.header()
   }
 
-  update () { return this.doc.update() }
-
-  async init (header = {}) {
-    debug('Ledger INIT', this)
-    await this.update()
-    if (this.doc.length > 0) {
-      throw new Error(
-        `cannot initialize ${this} ` +
-        'in non-empty document. ' +
-        `id="${this.doc.id}" ` +
-        `length=${this.doc.length}`
-      )
-    }
-    await this.doc.setHeader({
+  // TODO rename to _init or move
+  async create (opts = {}) {
+    debug('Ledger create', this, opts)
+    let header = {
       contentType: 'application/json',
-      ...header
-    })
-    debug('Ledger INIT done', this)
+    }
+    if (typeof opts.header === 'function'){
+      header = {...header, ...opts.header(this)}
+    }else if (opts.header){
+      header = {...header, ...opts.header}
+    }
+    await this.doc.create({ ...opts, header })
+    debug('Ledger created', this)
   }
 
-  async _verify (entry) {
+  async _verify (event) {
     await this.header()
-    const { __signature, ...signed } = entry
+    const { __signature, ...signed } = event
     return await verify(
       b4a.from(jsonCanonicalize(signed)),
       b4a.from(__signature, 'hex'),
@@ -81,56 +105,231 @@ module.exports = class Ledger {
     )
   }
 
-  async get (index, verify = false) {
-    if (index > this.length - 1) return
-    const buffer = await this.doc.get(index)
-    const entry = JSON.parse(buffer)
-    if (index > 0 && verify) {
-      const valid = await this._verify(entry)
+  async _unpackEvent(buffer, verify = false){
+    const event = JSON.parse(buffer)
+    if (verify) {
+      const valid = await this._verify(event)
       if (!valid) {
         throw new Error(
           `ledger event signature invalid. index=${index}`
         )
       }
     }
-    delete entry.__signature
-    debug('get', { index, entry })
-    return entry
+    delete event.__signature
+    return event
   }
 
-  async append (events) {
-    const signedEvents = []
-    for (const event of events) {
-      const json = b4a.from(jsonCanonicalize(event))
-      const signature = await this.doc.ownerSigningKeys.sign(json)
-      const signedEvent = JSON.stringify({
-        ...JSON.parse(json),
-        __signature: signature.toString('hex')
-      })
-      signedEvents.push(b4a.from(signedEvent))
+  // TODO only check signature on first get
+  async getEvent (index, verify = false) {
+    if (index > this.length - 1) return
+    const buffer = await this.doc.get(index)
+    const event = await this._unpackEvent(buffer, index > 0 && verify)
+    debug('getEvent', { index, event })
+    return event
+  }
+
+  _getEventSpec (eventName) {
+    return this.constructor.events[eventName]
+  }
+
+  async appendEvent (eventName, payload) {
+    const eventSpec = this._getEventSpec(eventName)
+    if (!eventSpec) throw new Error(`invalid event "${eventName}"`)
+    console.log({ eventSpec })
+    if (!eventSpec.schemaValidate(payload)) {
+      const errors = eventSpec.schemaValidate.errors
+      // console.error(`invalid event payload`, {eventName, payload, errors})
+      throw new Error(
+        'invalid event payload: ' +
+        errors.map(e =>
+          (e.instancePath ? `${e.instancePath} ` : '') + e.message
+        ).join(', ')
+      )
+      // throw new Error(`invalid event payload: ${JSON.stringify(errors)}`)
     }
-    await this.doc.append(signedEvents)
+    if (eventSpec.validate) {
+      // TODO: consider this.update() here?
+      const errorMessage = eventSpec.validate(this.state, payload)
+      if (errorMessage) throw new Error(`${errorMessage}`)
+    }
+
+    let event = { ...payload, '@event': eventName }
+    const json = b4a.from(jsonCanonicalize(event))
+    const signature = await this.doc.ownerSigningKeys.sign(json)
+    const signedEvent = JSON.stringify({
+      ...JSON.parse(json),
+      __signature: signature.toString('hex')
+    })
+
+    await this.doc.append([signedEvent])
+    await this.update()
+
+
+    // const signedEvents = []
+    // for (const event of events) {
+    //   const json = b4a.from(jsonCanonicalize(event))
+    //   const signature = await this.doc.ownerSigningKeys.sign(json)
+    //   const signedEvent = JSON.stringify({
+    //     ...JSON.parse(json),
+    //     __signature: signature.toString('hex')
+    //   })
+    //   signedEvents.push(b4a.from(signedEvent))
+    // }
+    // await this.doc.append(signedEvents)
+    // await this.update()
   }
 
   waitForUpdate () { return this.doc.waitForUpdate() }
 
-  async entries () {
-    // debug('entries', this.id, { length: this.length })
-    // await this.update()
+  async events () {
+    // // debug('events', this.id, { length: this.length })
+    // // await this.update()
     const { id, length } = this
-    debug('entries', { id, length })
-    if (this.length === 0) return []
-    debug('entries getting', { id, length })
-    const entries = await Promise.all(
-      Array(this.length).fill()
-        .map((_, i) => this.get(i))
-    )
-    debug('GOT entries', {
-      id, length, entries
-    })
+    // debug('events', { id, length })
+    // if (this.length === 0) return []
+    // debug('events getting', { id, length })
+    // const events = await Promise.all(
+    //   Array(this.length).fill()
+    //     .map((_, i) => this.getEvent(i))
+    // )
+    const entries = await this.doc.all()
     if (entries.length !== length) {
       throw new Error('Ledger fucked up')
     }
-    return entries
+    let [header, ...events] = entries
+    debug('GOT events', { id, length, events })
+    events = events.map(JSON.parse)
+    return events
+  }
+
+
+  async update () {
+    await this.doc.update()
+    const events = await this.events()
+    console.log('UPDATE!', this, events)
+    let state = this.constructor.getInitialState()
+    this._events = []
+
+    while (events.length > 0) {
+      const event = events.shift()
+      console.log('UPDATE LOOP', { event })
+      this._events.push(event)
+      const { '@event': eventName, ...payload } = event
+      const eventSpec = this._getEventSpec(eventName)
+      if (!eventSpec) {
+        console.error('\n\nBAD EVENT!\nignoring unexpected event', eventName, '\n\n')
+        continue
+      }
+      if (eventSpec.apply) {
+        state = eventSpec.apply(state, payload)
+      }
+      if (eventSpec.addEventStream) {
+        const eventStream = eventSpec.addEventStream(payload, state)
+        events = mergeEvents(events, eventStream.events)
+      }
+      if (eventSpec.removeEventStream) {
+        const id = eventSpec.removeEventStream(payload, state)
+        events = purgeEvents(events, id)
+      }
+    }
+
+    this._state = Object.freeze(state) // TODO deep freeze
+    return state
+  }
+
+  get state () { return this._state }
+
+  toJSON () {
+    // TODO deep clone?
+    return {
+      id: this.id,
+      length: this.length,
+      writable: this.writable,
+      contentType: this.contentType,
+      host: this.host,
+      signingKey: this.signingKey,
+      state: this.state
+    }
   }
 }
+
+module.exports = Ledger
+
+const BASE_EVENTS = compileEvents({
+  /**
+   * Opened Document
+   */
+  'Opened Document': {
+    schema: {
+      type: 'object',
+      properties: {
+        "document type": {
+          type: 'string',
+        },
+        "cryptographic signing key": {
+          type: 'string',
+        },
+        // "hyperswarm id" (optional) to get the latest more agressively
+        "hyperswarm id": {
+          type: 'string',
+        },
+        // "host url" (optional) to get the latest more agressively
+        "host url": {
+          type: 'string',
+          // TODO pattern
+        },
+      },
+      required: [
+        'document type',
+        'cryptographic signing key',
+      ],
+      additionalProperties: true
+    },
+    validate (state, doc) {
+      if (doc.length > 0)
+      if (state.open) return 'cannot open already open chest'
+    },
+    apply (state) {
+      state = { ...state }
+      state.open = true
+      state.signingKey = state['cryptographic signing key']
+      return state
+    }
+  },
+  'Closed Document': {
+    schema: {
+      type: 'object',
+      properties: {
+      },
+      required: [
+      ],
+      additionalProperties: true
+    },
+    validate (state, doc) {
+    },
+    apply (state) {
+      // const state = { ...state }
+      // state.open = true
+      // state.signingKey = state['cryptographic signing key']
+      return state
+    }
+  },
+  'Moved Document': {
+    schema: {
+      type: 'object',
+      properties: {
+      },
+      required: [
+      ],
+      additionalProperties: true
+    },
+    validate (state, doc) {
+    },
+    apply (state) {
+      // const state = { ...state }
+      // state.open = true
+      // state.signingKey = state['cryptographic signing key']
+      return state
+    }
+  },
+})

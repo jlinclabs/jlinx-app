@@ -24,6 +24,18 @@ helpers.createTestnet = async function (...args) {
   return testnet
 }
 
+helpers.createJinxClient = async function(t) {
+  let firsttime
+  if (!t.testnet) {
+    firsttime = true
+    t.testnet = await helpers.createTestnet(t)
+  }
+  const { createHttpServers, createJlinxClient }  = t.testnet
+  const [host] = await createHttpServers(firsttime ? 2 : 1)
+  const client = await createJlinxClient(host.url)
+  return client
+}
+
 module.exports = helpers
 
 // const test = require('brittle')

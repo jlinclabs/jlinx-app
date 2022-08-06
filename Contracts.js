@@ -58,8 +58,16 @@ class Contract {
   get signatureDropoffUrl () { return this._value?.signatureDropoffUrl }
 
   async events () {
-    const events = await this._ledger.entries()
-    return events.slice(1)
+    let events = await this._ledger.entries()
+    events = events.slice(1) // cut header
+    for (const event of events){
+      if (event.event === 'signerResponded') {
+        const contractResponse = await this._contracts.getParty(event.contractResponseId)
+        const moreEvents = await contractResponse.events()
+        events = [...events, ...moreEvents] // TODO some magic sorting
+      }
+    }
+    return events
   }
 
   async update () {
@@ -76,10 +84,10 @@ class Contract {
         value.signatureDropoffUrl = event.signatureDropoffUrl
         value.jlinxHost = event.jlinxHost
       } else if (event.event === 'signerResponded') {
-        const contractResponse =
-          await this._contracts.getParty(event.contractResponseId)
-        const moreEvents = await contractResponse.events()
-        events = [...events, ...moreEvents]
+        // const contractResponse =
+        //   await this._contracts.getParty(event.contractResponseId)
+        // const moreEvents = await contractResponse.events()
+        // events = [...events, ...moreEvents]
         value.state = 'signed'
         value.signatureId = event.contractResponseId
       } else if (event.event === 'signed') {

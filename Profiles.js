@@ -1,39 +1,37 @@
 const Debug = require('debug')
-const EventMachine = require('./EventMachine')
+const Ledger = require('./Ledger')
 
 const debug = Debug('jlinx:client:profiles')
 
-module.exports = class Profiles {
+class Profiles {
   constructor (jlinx) {
     this.jlinx = jlinx
   }
 
   async create (opts = {}) {
-    const {
-      ownerSigningKeys,
-      header
-    } = opts
-
-    await this.jlinx.connected()
-    const doc = await this.jlinx.create({
-      ownerSigningKeys
+    return await this.jlinx.create({
+      ...opts,
+      class: Profile
     })
-    debug('create', { doc })
-    const profile = new Profile(doc, this)
-    await profile.init(header)
-    await profile.ready()
-    return profile
+    // debug('create', { doc })
+    // const profile = new Profile(doc, this)
+    // await profile.init(header)
+    // await profile.ready()
+    // return profile
   }
 
-  async get (id) {
+  async get (id, opts = {}) {
     debug('get', { id })
-    const doc = await this.jlinx.get(id)
+    const doc = await this.jlinx.get(id, {
+      ...opts,
+      class: Profile
+    })
     debug('get', { doc })
     return await Profile.open(doc, this)
   }
 }
 
-class Profile extends EventMachine {
+class Profile extends Ledger {
   constructor (doc, profiles) {
     super(doc)
     this._profiles = profiles
@@ -43,25 +41,33 @@ class Profile extends EventMachine {
 
   async set (changes) {
     for (const key in changes) {
-      if (typeof changes[key] === 'undefined') { changes[key] = null }
+      if (typeof changes[key] === 'undefined') {
+        changes[key] = null
+      }
     }
-    await this.appendEvent('update', changes)
+    await this.appendEvent('Updated Profile', changes)
   }
 
   get (key) {
     return this.value[key]
   }
 
-  // toJSON () {
-  //   return {
-  //     ...super.toJSON(),
-  //     serviceEndpoint: this.serviceEndpoint,
-  //   }
-  // }
+  toJSON () {
+    // const data = super.toJSON()
+    return {
+      ...this.value,
+      id: this.id,
+      // meta: data,
+      serviceEndpoint: this.serviceEndpoint,
+    }
+  }
 }
 
+Profiles.Profile = Profile
+module.exports = Profiles
+
 Profile.events = {
-  update: {
+  'Updated Profile': {
     schema: {
       type: 'object',
       additionalProperties: true
@@ -73,3 +79,4 @@ Profile.events = {
     }
   }
 }
+

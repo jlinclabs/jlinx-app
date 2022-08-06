@@ -2,16 +2,14 @@ const Debug = require('debug')
 const b4a = require('b4a')
 const multibase = require('jlinx-util/multibase')
 
-const debug = Debug('jlinx:client:document')
+const debug = Debug('jlinx:client:RemoteDocument')
 
-module.exports = class Document {
-  static async open (opts) {
-    const doc = new Document(opts)
-    await doc.ready()
-    return doc
-  }
-
+/**
+ * Should match API with jlinx-node/Document
+ */
+module.exports = class RemoteDocument {
   constructor (opts) {
+    this.client = opts.client
     this.host = opts.host
     this.id = opts.id
     this.ownerSigningKeys = opts.ownerSigningKeys
@@ -19,7 +17,7 @@ module.exports = class Document {
     // set on create if loaded from cache
     this.length = opts.length
     this._cache = opts._cache || []
-    this._opening = this._open()
+    this._opening = opts._opening || this._open()
   }
 
   [Symbol.for('nodejs.util.inspect.custom')] (depth, opts) {
@@ -33,6 +31,11 @@ module.exports = class Document {
   }
 
   ready () { return this._opening }
+
+  async _open () {
+    debug('open', this)
+    if (typeof this.length !== 'number') await this.update()
+  }
 
   async header () {
     if (!this._header) { this._header = await this.host.getHeader(this.id) }
@@ -49,29 +52,24 @@ module.exports = class Document {
     this.length = header.length || 0
   }
 
-  async _open () {
-    debug('open', this)
-    if (typeof this.length !== 'number') await this.update()
-  }
-
-  async setHeader (header = {}) {
+  async create (opts = {}) {
     await this.update()
     if (this.length > 0) {
       throw new Error(
-        'cannot set header for non-empty document. ' +
+        'cannot create for non-empty document. ' +
         `id="${this.doc.id}" ` +
         `length=${this.doc.length}`
       )
     }
-    header = JSON.stringify({
+    const header = JSON.stringify({
       contentType: 'application/octet-stream',
-      ...header,
+      ...opts.header,
       host: this.host.url,
       signingKey: multibase.encode(this.ownerSigningKeys.publicKey)
     })
-    this._header = JSON.parse(header)
+    debug('creating', this, { header })
     await this.append([b4a.from(header)])
-    return this._header
+    this._header = JSON.parse(header)
   }
 
   async get (index) {

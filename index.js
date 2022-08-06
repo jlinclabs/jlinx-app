@@ -3,7 +3,7 @@ const multibase = require('jlinx-util/multibase')
 const Vault = require('jlinx-vault')
 
 const RemoteHost = require('./RemoteHost')
-const Document = require('./Document')
+const RemoteDocument = require('./RemoteDocument')
 
 const debug = Debug('jlinx:client')
 
@@ -57,21 +57,19 @@ module.exports = class JlinxClient {
       writable: true,
       length: 0
     })
-    const doc = await Document.open({
-      host: this.host,
+
+    const doc = this._get({
+      ...opts,
       id,
       ownerSigningKeys,
-      length: 0
     })
+    debug('creating', doc)
+    await doc.create(opts)
+    debug('created', doc)
     return doc
-    // const instance = new TypeClass(doc, this)
-    // if (instance.init) await instance.init(initOpts)
-    // else await instance.ready()
-    // debug('created', instance)
-    // return instance
   }
 
-  async get (id) {
+  async get (id, opts = {}) {
     debug('get', { id })
     const docRecord = await this.vault.docs.get(id)
     debug('get', { id, docRecord })
@@ -79,19 +77,29 @@ module.exports = class JlinxClient {
       ? await this.vault.keys.get(multibase.toBuffer(docRecord.ownerSigningKey))
       : undefined
     debug('get', { id, ownerSigningKeys })
-    const doc = await Document.open({
-      host: this.host,
+    const doc = this._get({
+      ...opts,
       id,
-      ownerSigningKeys
+      ownerSigningKeys,
     })
-    const header = await doc.header()
-    debug('get', { doc, header })
+    debug('opening', doc)
+    await doc.ready()
+    debug('opened', doc)
+    return doc
+  }
 
-    // if (header && header.docType && this.docTypes[header.docType]) {
-    //   const TypeClass = this.docTypes[header.docType]
-    //   doc = new TypeClass(doc, this)
-    // }
-    // debug('get ->', doc)
+  _get({ class: Clz, ...opts }){
+    // TODO add support for local node
+    let doc = new RemoteDocument({
+      client: this,
+      host: this.host,
+      ...opts
+      // id,
+      // ownerSigningKeys,
+      // length: 0
+    })
+
+    if (Clz) { doc = new Clz(doc) }
     return doc
   }
 

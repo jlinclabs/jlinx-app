@@ -14,19 +14,27 @@ test('Profiles', async (t) => {
       }
     )
   })
-
+  console.log({ profile })
+  t.ok(profile instanceof Profiles.Profile)
+  t.is(profile.length, 1)
   const expectedServiceEndpoint = `http://jlinxprofile.me/jlinx/profiles/${profile.id}`
+  t.alike(await profile.header(), {
+    contentType: 'application/json',
+    host: client.host.url,
+    signingKey: profile.signingKey,
+    serviceEndpoint: expectedServiceEndpoint
+  })
+
+  t.alike(await profile.events(), [])
+
   t.is(
     profile.serviceEndpoint,
     expectedServiceEndpoint
   )
-  t.alike(profile._header, {
+
+  t.alike(profile.toJSON(), {
     id: profile.id,
-    length: 1,
-    contentType: 'application/json',
-    serviceEndpoint: expectedServiceEndpoint,
-    host: client.host.url,
-    signingKey: profile.signingKey
+    serviceEndpoint: expectedServiceEndpoint
   })
 
   await profile.set({
@@ -35,7 +43,9 @@ test('Profiles', async (t) => {
     preferredUsername: 'paulpravenza'
   })
 
-  t.alike(profile.state, {
+  t.alike(profile.toJSON(), {
+    id: profile.id,
+    serviceEndpoint: expectedServiceEndpoint,
     name: 'Paul Pravenza',
     avatar: 'http://gravatar.com/@paulpravenza',
     preferredUsername: 'paulpravenza'
