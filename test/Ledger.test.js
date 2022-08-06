@@ -89,7 +89,6 @@ test('Ledger', async (t) => {
   )
   t.alike(await ledger.events(), [])
 
-  console.log('🔥???', ledger, ledger.getInitialState+'')
   await ledger.openDocument()
   t.is(ledger.length, 2)
 
@@ -286,7 +285,7 @@ test('Chest as subclass of Ledger', async (t) => {
     const events = await chest.events()
     t.is(events.length, 1)
     t.alike(events[0], {
-      '@event': 'Opened  Document',
+      '@event': 'Opened Chest',
       '@eventId': events[0]['@eventId']
     })
     expectedEvents.push(events[0])

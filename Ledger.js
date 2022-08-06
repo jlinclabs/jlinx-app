@@ -21,9 +21,6 @@ class Ledger {
   }
 
   static set events (events) {
-    // const parentEvents = Object.getPrototypeOf(this)._events
-    // console.trace('SET EVENTS', this, this._events)
-
     if (this === Ledger || this.hasOwnProperty('_events')){
       throw new Error(`events for ${this.name} already locked in. Subclass to extend`)
     }
