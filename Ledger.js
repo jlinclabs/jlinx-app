@@ -80,7 +80,6 @@ class Ledger {
     await this.header()
   }
 
-  // TODO rename to _init or move
   async create (opts = {}) {
     debug('Ledger create', this, opts)
     let header = {
@@ -96,7 +95,7 @@ class Ledger {
   }
 
   async _verify (event) {
-    await this.header()
+    await this.ready()
     const { __signature, ...signed } = event
     return await verify(
       b4a.from(jsonCanonicalize(signed)),
@@ -196,9 +195,23 @@ class Ledger {
     if (entries.length !== length) {
       throw new Error('Ledger fucked up')
     }
-    let [header, ...events] = entries
+    if (entries.length < 2) return []
+    debug('PARSING EVENTS FROM ENTIRIES', { entries })
+    const events = []
+    entries.shift() // remove header
+    while (entries.length){
+      const buffer = entries.shift()
+      let event
+      try{
+        event = await this._unpackEvent(buffer, true)
+      }catch(error){
+        debug('invalid event', {event, error})
+        continue
+      }
+      events.push(event)
+    }
+    // let [header, ...events] = entries
     debug('GOT events', { id, length, events })
-    events = events.map(JSON.parse)
     return events
   }
 
@@ -251,6 +264,10 @@ class Ledger {
       state: this.state
     }
   }
+
+  async openDocument() {
+    await this.appendEvent('Opened Document', {})
+  }
 }
 
 module.exports = Ledger
@@ -280,8 +297,8 @@ const BASE_EVENTS = compileEvents({
         },
       },
       required: [
-        'document type',
-        'cryptographic signing key',
+        // 'document type',
+        // 'cryptographic signing key',
       ],
       additionalProperties: true
     },

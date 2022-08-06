@@ -45,10 +45,26 @@ test('Ledger', async (t) => {
   const [host1, host2] = await createHttpServers(2)
   const client = await createJlinxClient(host1.url)
   const ledger = await client.create({ class: Ledger })
+
   t.is(ledger.length, 1)
   t.is(ledger.writable, true)
-
   t.is(ledger.signingKey, multibase.encode(ledger.doc.ownerSigningKeys.publicKey))
+
+
+  t.alike(
+    inspect(ledger),
+    (
+      'Ledger(\n' +
+      `  id: ${ledger.id}\n` +
+      '  writable: true\n' +
+      '  length: 1\n' +
+      '  contentType: application/json\n' +
+      `  host: ${client.host.url}\n` +
+      `  signingKey: ${ledger.signingKey}\n` +
+      ')'
+    )
+  )
+
   const expectedHeader = {
     contentType: 'application/json',
     host: client.host.url,
@@ -62,56 +78,31 @@ test('Ledger', async (t) => {
     JSON.parse(await ledger.doc.get(0)),
     expectedHeader
   )
+  t.alike(await ledger.events(), [])
 
-  await ledger.appendEvents([
-    { event: 'one', index: 1 },
-    { event: 'two', index: 2 }
+  await ledger.openDocument()
+  t.is(ledger.length, 2)
+
+  t.alike(await ledger.events(), [
+    { '@event': 'Opened Document' }
   ])
 
-  t.is(ledger.length, 3)
+  t.is(ledger.length, 2)
 
-  t.alike(await ledger.get(0, true), expectedHeader)
-  t.alike(await ledger.get(1, true), { event: 'one', index: 1 })
-  t.alike(await ledger.get(2, true), { event: 'two', index: 2 })
+  t.alike(await ledger.getEvent(0, true), expectedHeader)
+  t.alike(await ledger.getEvent(1, true), { '@event': 'Opened Document' })
 
-  t.alike(
-    await ledger.events(),
-    [
-      expectedHeader,
-      { event: 'one', index: 1 },
-      { event: 'two', index: 2 }
-    ]
-  )
-
-  t.alike(
-    inspect(ledger),
-    (
-      'Ledger(\n' +
-      `  id: ${ledger.id}\n` +
-      '  writable: true\n' +
-      '  length: 3\n' +
-      '  contentType: application/json\n' +
-      `  host: ${client.host.url}\n` +
-      `  signingKey: ${ledger.signingKey}\n` +
-      ')'
-    )
-  )
 
   const client2 = await createJlinxClient(host2.url)
-  const copyOfDoc1 = await client2.get(doc1.id)
-
-  const copyOfLedger = new Ledger(copyOfDoc1)
-  await copyOfLedger.ready()
-  t.is(copyOfLedger.length, 3)
-  t.is(copyOfLedger.writable, false)
+  const ledgerCopy = await client2.get(ledger.id, { class: Ledger })
 
   t.alike(
-    inspect(copyOfLedger),
+    inspect(ledgerCopy),
     (
       'Ledger(\n' +
       `  id: ${ledger.id}\n` +
       '  writable: false\n' +
-      '  length: 3\n' +
+      '  length: 2\n' +
       '  contentType: application/json\n' +
       `  host: ${client.host.url}\n` +
       `  signingKey: ${ledger.signingKey}\n` +
@@ -119,18 +110,14 @@ test('Ledger', async (t) => {
     )
   )
 
-  t.alike(await copyOfLedger.get(0, true), expectedHeader)
-  t.alike(await copyOfLedger.get(1, true), { event: 'one', index: 1 })
-  t.alike(await copyOfLedger.get(2, true), { event: 'two', index: 2 })
+  t.is(copyOfLedger.length, 3)
+  t.is(copyOfLedger.writable, false)
 
-  t.alike(
-    await copyOfLedger.events(),
-    [
-      expectedHeader,
-      { event: 'one', index: 1 },
-      { event: 'two', index: 2 }
-    ]
-  )
+  t.alike(await copyOfLedger.get(0, true), expectedHeader)
+  t.alike(await copyOfLedger.get(1, true), { '@event': 'Opened Document' })
+  t.alike(await copyOfLedger.events(), [
+    { '@event': 'Opened Document' }
+  ])
 })
 
 
