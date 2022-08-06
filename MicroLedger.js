@@ -4,7 +4,6 @@ const Ledger = require('./Ledger')
 
 const debug = Debug('jlinx:client:EventMachine')
 
-
 /**
  *
  *
@@ -18,9 +17,7 @@ const debug = Debug('jlinx:client:EventMachine')
  *    - add a client corestore that serves as a private local cache
  */
 class MicroLedger {
-
   static extendEvents (events) {
-
     console.log('extendEvents', this, this._events)
     console.dir(this.super)
     if (this._events) throw new Error(`unable to redefine events for ${this}`)
@@ -157,31 +154,30 @@ MicroLedger.events = compileEvents({
     schema: {
       type: 'object',
       properties: {
-        "document type": {
-          type: 'string',
+        'document type': {
+          type: 'string'
         },
-        "cryptographic signing key": {
-          type: 'string',
+        'cryptographic signing key': {
+          type: 'string'
         },
         // "hyperswarm id" (optional) to get the latest more agressively
-        "hyperswarm id": {
-          type: 'string',
+        'hyperswarm id': {
+          type: 'string'
         },
         // "host url" (optional) to get the latest more agressively
-        "host url": {
-          type: 'string',
+        'host url': {
+          type: 'string'
           // TODO pattern
-        },
+        }
       },
       required: [
         'document type',
-        'cryptographic signing key',
+        'cryptographic signing key'
       ],
       additionalProperties: true
     },
     validate (state, doc) {
-      if (doc.length > 0)
-      if (state.open) return 'cannot open already open chest'
+      if (doc.length > 0) { if (state.open) return 'cannot open already open chest' }
     },
     apply (state) {
       state = { ...state }
@@ -225,9 +221,8 @@ MicroLedger.events = compileEvents({
       // state.signingKey = state['cryptographic signing key']
       return state
     }
-  },
+  }
 })
-
 
 function compileEvents (events) {
   const cEvents = {}

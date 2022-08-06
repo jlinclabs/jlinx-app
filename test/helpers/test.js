@@ -24,13 +24,13 @@ helpers.createTestnet = async function (...args) {
   return testnet
 }
 
-helpers.createJlinxClient = async function(t) {
+helpers.createJlinxClient = async function (t) {
   let firsttime
   if (!t.testnet) {
     firsttime = true
     t.testnet = await helpers.createTestnet(t)
   }
-  const { createHttpServers, createJlinxClient }  = t.testnet
+  const { createHttpServers, createJlinxClient } = t.testnet
   const [host] = await createHttpServers(firsttime ? 2 : 1)
   const client = await createJlinxClient(host.url)
   return client

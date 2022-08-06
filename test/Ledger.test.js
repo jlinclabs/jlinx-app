@@ -8,8 +8,8 @@ test('subclassing', async (t) => {
   Box.events = {
     'Opened Box': {
       schema: {},
-      apply(){}
-    },
+      apply () {}
+    }
   }
 
   t.alike(Box.events, {
@@ -18,15 +18,15 @@ test('subclassing', async (t) => {
   })
   t.exception(
     () => { Box.events = {} },
-    `events for Box already locked in. Subclass to extend`
+    'events for Box already locked in. Subclass to extend'
   )
 
   class Chest extends Box {}
   Chest.events = {
     'Locked Chest': {
       schema: {},
-      apply(){}
-    },
+      apply () {}
+    }
   }
 
   t.alike(Chest.events, {
@@ -36,7 +36,17 @@ test('subclassing', async (t) => {
 
   t.exception(
     () => { Chest.events = {} },
-    `events for Chest already locked in. Subclass to extend`
+    'events for Chest already locked in. Subclass to extend'
+  )
+
+  class MagicChest extends Chest {}
+  t.exception(
+    () => {
+      MagicChest.events = {
+        'Moved Document': {},
+      }
+    },
+    'refusing to override Ledger event "Moved Document"'
   )
 })
 
@@ -79,6 +89,7 @@ test('Ledger', async (t) => {
   )
   t.alike(await ledger.events(), [])
 
+  console.log('🔥???', ledger, ledger.getInitialState+'')
   await ledger.openDocument()
   t.is(ledger.length, 2)
 
@@ -88,7 +99,7 @@ test('Ledger', async (t) => {
     t.is(events.length, 1)
     t.alike(events[0], {
       '@event': 'Opened Document',
-      '@eventId': events[0]['@eventId'],
+      '@eventId': events[0]['@eventId']
     })
     expectedEvents.push(events[0])
   }
@@ -127,7 +138,7 @@ test('Ledger', async (t) => {
     t.is(events.length, 2)
     t.alike(events[1], {
       '@event': 'Closed Document',
-      '@eventId': events[1]['@eventId'],
+      '@eventId': events[1]['@eventId']
     })
     expectedEvents.push(events[1])
   }
@@ -139,7 +150,6 @@ test('Ledger', async (t) => {
   t.is(ledgerCopy.length, 3)
   t.alike(await ledgerCopy.events(), expectedEvents)
 })
-
 
 test('Chest as subclass of Ledger', async (t) => {
   class Chest extends Ledger {
@@ -252,7 +262,6 @@ test('Chest as subclass of Ledger', async (t) => {
     )
   )
 
-
   await chest.update()
   t.is(chest.length, 1)
   t.alike(await chest.events(), [])
@@ -272,17 +281,16 @@ test('Chest as subclass of Ledger', async (t) => {
   await chest.open()
   t.is(chest.length, 2)
 
-  let expectedEvents = []
+  const expectedEvents = []
   {
     const events = await chest.events()
     t.is(events.length, 1)
     t.alike(events[0], {
       '@event': 'Opened  Document',
-      '@eventId': events[0]['@eventId'],
+      '@eventId': events[0]['@eventId']
     })
     expectedEvents.push(events[0])
   }
-
 
   t.alike(chest.state, {
     open: true,
@@ -411,7 +419,7 @@ test('Chest as subclass of Ledger', async (t) => {
     t.alike(await chest.events(), [
       {
         '@event': 'Opened Chest',
-        '@eventId': events[0]['@eventId'],
+        '@eventId': events[0]['@eventId']
       },
       {
         '@event': 'Added Item',
@@ -424,11 +432,11 @@ test('Chest as subclass of Ledger', async (t) => {
       },
       {
         '@event': 'Closed Chest',
-        '@eventId': events[2]['@eventId'],
+        '@eventId': events[2]['@eventId']
       },
       {
         '@event': 'Opened Chest',
-        '@eventId': events[3]['@eventId'],
+        '@eventId': events[3]['@eventId']
       },
       {
         '@event': 'Added Item',
@@ -441,11 +449,11 @@ test('Chest as subclass of Ledger', async (t) => {
       },
       {
         '@event': 'Closed Chest',
-        '@eventId': events[5]['@eventId'],
+        '@eventId': events[5]['@eventId']
       },
       {
         '@event': 'Opened Chest',
-        '@eventId': events[6]['@eventId'],
+        '@eventId': events[6]['@eventId']
       },
       {
         '@event': 'Removed Item',

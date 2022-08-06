@@ -99,7 +99,6 @@ test('Chest as EventMachine', async (t) => {
     }
   })
 
-
   const client = await createJlinxClient(t)
 
   const chest = await client.create({

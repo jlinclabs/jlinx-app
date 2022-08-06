@@ -14,28 +14,27 @@ const debug = Debug('jlinx:client:Ledger')
  * in linear/sequential order
  */
 class Ledger {
-
   static get events () {
     return this === Ledger
       ? BASE_EVENTS
-      : {
-        ...Object.getPrototypeOf(this).events,
-        ...this._events,
-      }
+      : (this._events || BASE_EVENTS)
   }
 
   static set events (events) {
-    if (
-      this === Ledger ||
-      // sames as superclass._events AKA not-extended
-      this._events !== Object.getPrototypeOf(this)._events
-    ){
+    // const parentEvents = Object.getPrototypeOf(this)._events
+    // console.trace('SET EVENTS', this, this._events)
+
+    if (this === Ledger || this.hasOwnProperty('_events')){
       throw new Error(`events for ${this.name} already locked in. Subclass to extend`)
     }
-    this._events = compileEvents(events)
+    this._events = safeAssign(
+      {},
+      Object.getPrototypeOf(this).events,
+      compileEvents(events)
+    )
   }
 
-  static getInitialState () { return {} }
+  getInitialState () { return {} }
 
   constructor (doc) {
     debug({ doc })
@@ -90,12 +89,12 @@ class Ledger {
   async create (opts = {}) {
     debug('Ledger create', this, opts)
     let header = {
-      contentType: 'application/json',
+      contentType: 'application/json'
     }
-    if (typeof opts.header === 'function'){
-      header = {...header, ...opts.header(this)}
-    }else if (opts.header){
-      header = {...header, ...opts.header}
+    if (typeof opts.header === 'function') {
+      header = { ...header, ...opts.header(this) }
+    } else if (opts.header) {
+      header = { ...header, ...opts.header }
     }
     await this.doc.create({ ...opts, header })
     debug('Ledger created', this)
@@ -111,7 +110,7 @@ class Ledger {
     )
   }
 
-  async _unpackEvent(buffer, verify = false){
+  async _unpackEvent (buffer, verify = false) {
     const event = JSON.parse(buffer)
     if (verify) {
       const valid = await this._verify(event)
@@ -180,10 +179,10 @@ class Ledger {
       if (errorMessage) throw new Error(`${errorMessage}`)
     }
 
-    let event = {
+    const event = {
       ...payload,
       '@event': eventName,
-      '@eventId': jtil.createRandomString(5),
+      '@eventId': jtil.createRandomString(5)
     }
     const json = b4a.from(jsonCanonicalize(event))
     const signature = await this.doc.ownerSigningKeys.sign(json)
@@ -209,13 +208,13 @@ class Ledger {
     if (entries.length < 2) return []
     const events = []
     entries.shift() // remove header
-    while (entries.length){
+    while (entries.length) {
       const buffer = entries.shift()
       let event
-      try{
+      try {
         event = await this._unpackEvent(buffer, true)
-      }catch(error){
-        debug('invalid event', {error})
+      } catch (error) {
+        debug('invalid event', { error })
         continue
       }
       events.push(event)
@@ -232,25 +231,14 @@ class Ledger {
     // TODO only apply new events to cached state
     // TODO persist state in local-only hypercore
     const events = await this.events()
-
     let state = await this.getInitialState()
-    this._events = []
-
     while (events.length > 0) {
       const event = events.shift()
-
-      this._events.push(event)
-      const { '@event': eventName, ...payload } = event
-      const eventSpec = this._getEventSpec(eventName)
-      if (!eventSpec) {
-        console.error('\n\nBAD EVENT!\nignoring unexpected event', eventName, '\n\n')
-        continue
-      }
+      const eventSpec = this._getEventSpec(event['@event'])
       if (eventSpec.apply) {
-        state = eventSpec.apply(state, payload)
+        state = eventSpec.apply(state, event)
       }
     }
-
     this._state = Object.freeze(state) // TODO deep freeze
     debug('updated', this, this._state)
     return state
@@ -271,15 +259,15 @@ class Ledger {
     }
   }
 
-  async openDocument() {
+  async openDocument () {
     await this.appendEvent('Opened Document', {})
   }
 
-  async closeDocument() {
+  async closeDocument () {
     await this.appendEvent('Closed Document', {})
   }
 
-  async moveDocument() {
+  async moveDocument () {
     await this.appendEvent('Moved Document', {})
   }
 }
@@ -294,21 +282,21 @@ const BASE_EVENTS = compileEvents({
     schema: {
       type: 'object',
       properties: {
-        "document type": {
-          type: 'string',
+        'document type': {
+          type: 'string'
         },
-        "cryptographic signing key": {
-          type: 'string',
+        'cryptographic signing key': {
+          type: 'string'
         },
         // "hyperswarm id" (optional) to get the latest more agressively
-        "hyperswarm id": {
-          type: 'string',
+        'hyperswarm id': {
+          type: 'string'
         },
         // "host url" (optional) to get the latest more agressively
-        "host url": {
-          type: 'string',
+        'host url': {
+          type: 'string'
           // TODO pattern
-        },
+        }
       },
       required: [
         // 'document type',
@@ -317,8 +305,7 @@ const BASE_EVENTS = compileEvents({
       additionalProperties: true
     },
     validate (state, doc) {
-      if (doc.length > 0)
-      if (state.open) return 'cannot open already open chest'
+      if (doc.length > 0) { if (state.open) return 'cannot open already open chest' }
     },
     apply (state) {
       state = { ...state }
@@ -362,5 +349,19 @@ const BASE_EVENTS = compileEvents({
       // state.signingKey = state['cryptographic signing key']
       return state
     }
-  },
+  }
 })
+
+
+function safeAssign(target, ...objects){
+  for (const object of objects){
+    if (object === undefined || object === null) continue
+    for (const key in object){
+      if (key in target){
+        throw new Error(`refusing to override Ledger event "${key}"`)
+      }
+      target[key] = object[key]
+    }
+  }
+  return target
+}

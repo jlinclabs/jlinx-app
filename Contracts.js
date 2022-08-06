@@ -60,7 +60,7 @@ class Contract {
   async events () {
     let events = await this._ledger.entries()
     events = events.slice(1) // cut header
-    for (const event of events){
+    for (const event of events) {
       if (event.event === 'signerResponded') {
         const contractResponse = await this._contracts.getParty(event.contractResponseId)
         const moreEvents = await contractResponse.events()
@@ -74,7 +74,7 @@ class Contract {
     await this._ledger.update()
     const value = {}
     value.contractId = this.id
-    let events = await this.events()
+    const events = await this.events()
     while (events.length > 0) {
       const event = events.shift()
       if (event.event === 'offered') {

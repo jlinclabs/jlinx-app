@@ -4,7 +4,6 @@ const Ledger = require('./Ledger')
 
 const debug = Debug('jlinx:client:EventMachine')
 
-
 /**
  *
  *

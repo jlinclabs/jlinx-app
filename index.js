@@ -61,7 +61,7 @@ module.exports = class JlinxClient {
     const doc = this._get({
       ...opts,
       id,
-      ownerSigningKeys,
+      ownerSigningKeys
     })
     debug('creating', doc)
     await doc.create(opts)
@@ -80,7 +80,7 @@ module.exports = class JlinxClient {
     const doc = this._get({
       ...opts,
       id,
-      ownerSigningKeys,
+      ownerSigningKeys
     })
     debug('opening', doc)
     await doc.ready()
@@ -88,7 +88,7 @@ module.exports = class JlinxClient {
     return doc
   }
 
-  _get({ class: Clz, ...opts }){
+  _get ({ class: Clz, ...opts }) {
     // TODO add support for local node
     let doc = new RemoteDocument({
       client: this,

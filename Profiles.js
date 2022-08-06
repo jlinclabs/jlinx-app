@@ -58,7 +58,7 @@ class Profile extends Ledger {
       ...this.value,
       id: this.id,
       // meta: data,
-      serviceEndpoint: this.serviceEndpoint,
+      serviceEndpoint: this.serviceEndpoint
     }
   }
 }
@@ -79,4 +79,3 @@ Profile.events = {
     }
   }
 }
-
