@@ -13,21 +13,14 @@ class Profiles {
       ...opts,
       class: Profile
     })
-    // debug('create', { doc })
-    // const profile = new Profile(doc, this)
-    // await profile.init(header)
-    // await profile.ready()
-    // return profile
   }
 
   async get (id, opts = {}) {
     debug('get', { id })
-    const doc = await this.jlinx.get(id, {
+    return await this.jlinx.get(id, {
       ...opts,
       class: Profile
     })
-    debug('get', { doc })
-    return await Profile.open(doc, this)
   }
 }
 
@@ -49,13 +42,13 @@ class Profile extends Ledger {
   }
 
   get (key) {
-    return this.value[key]
+    return this.state[key]
   }
 
   toJSON () {
     // const data = super.toJSON()
     return {
-      ...this.value,
+      ...this.state,
       id: this.id,
       // meta: data,
       serviceEndpoint: this.serviceEndpoint

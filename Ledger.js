@@ -121,16 +121,11 @@ class Ledger {
         )
       }
     }
-    const {
-      '@event': eventName,
-      '@eventId': eventId,
-      '@signature': signature,
-      ...payload
-    } = event
 
-    const eventSpec = this._getEventSpec(eventName)
+    const eventSpec = this._getEventSpec(event['@event'])
+    const payload = extractPayload(event)
     if (!eventSpec || !eventSpec.schemaValidate(payload)) {
-      const errors = eventSpec.schemaValidate.errors
+      const errors = eventSpec?.schemaValidate?.errors
       debug('INVALID EVENT: doesnt match schema', { event, payload, errors })
 
       throw new Error(
@@ -159,6 +154,7 @@ class Ledger {
   }
 
   async appendEvent (eventName, payload = {}) {
+    payload = extractPayload(payload) // strip protected props
     const eventSpec = this._getEventSpec(eventName)
     if (!eventSpec) throw new Error(`invalid event "${eventName}"`)
     // console.log({ eventSpec })
@@ -237,7 +233,7 @@ class Ledger {
       const event = events.shift()
       const eventSpec = this._getEventSpec(event['@event'])
       if (eventSpec.apply) {
-        state = eventSpec.apply(state, event)
+        state = eventSpec.apply(state, extractPayload(event))
       }
     }
     this._state = Object.freeze(state) // TODO deep freeze
@@ -368,3 +364,13 @@ function safeAssign (target, ...objects) {
 
 const hasOwnProperty = (object, prop) =>
   Object.prototype.hasOwnProperty.call(object, prop)
+
+
+function extractPayload(event){
+  const payload = {...event}
+  delete payload['@event']
+  delete payload['@eventId']
+  delete payload['@signature']
+  delete payload['@eventCause']
+  return payload
+}

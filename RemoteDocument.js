@@ -84,12 +84,14 @@ module.exports = class RemoteDocument {
     // await this.ready() // READY uses get lol
     if (index > this.length - 1) return
     let entry = this._cache[index]
+    let cached
     if (!entry) {
       entry = await this.host.getEntry(this.id, index)
-      debug('get', { index, entry })
       this._cache[index] = entry
+    }else {
+      cached = true
     }
-    debug('get', index, entry)
+    debug('get', index, cached ? 'CACHED' : '')
     return entry
   }
 
@@ -107,6 +109,7 @@ module.exports = class RemoteDocument {
         block,
         signature
       )
+      this._cache[newLength - 1] = block
       this.length = newLength
     }
   }

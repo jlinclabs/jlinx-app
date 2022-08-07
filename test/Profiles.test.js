@@ -14,9 +14,10 @@ test('Profiles', async (t) => {
       }
     )
   })
-  console.log({ profile })
+
   t.ok(profile instanceof Profiles.Profile)
   t.is(profile.length, 1)
+
   const expectedServiceEndpoint = `http://jlinxprofile.me/jlinx/profiles/${profile.id}`
   t.alike(await profile.header(), {
     contentType: 'application/json',
@@ -92,6 +93,7 @@ test('Profiles', async (t) => {
   client2.profiles = new Profiles(client2)
 
   const profile2 = await client2.profiles.get(profile.id)
+  await profile2.update()
   t.is(profile2.writable, false)
   t.alike(profile.state, profile2.state)
   t.alike(profile.events, profile2.events)
