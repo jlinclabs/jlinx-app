@@ -1,6 +1,6 @@
 const Debug = require('debug')
 const multibase = require('jlinx-util/multibase')
-const EventMachine = require('./EventMachine')
+const Ledger = require('./Ledger')
 
 const debug = Debug('jlinx:client:identifiers')
 
@@ -10,25 +10,22 @@ module.exports = class Identifiers {
   }
 
   async create (opts = {}) {
-    const {
-      ownerSigningKeys
-    } = opts
-    const doc = await this.jlinx.create({
-      ownerSigningKeys
+    return await this.jlinx.create({
+      ...opts,
+      class: Identifier
     })
-    debug('create', { doc })
-    return await Identifier.create(doc, this)
   }
 
-  async get (id) {
+  async get (id, opts = {}) {
     debug('get', { id })
-    const doc = await this.jlinx.get(id)
-    debug('get', { doc })
-    return await Identifier.open(doc, this)
+    return await this.jlinx.get(id, {
+      ...opts,
+      class: Identifier
+    })
   }
 }
 
-class Identifier extends EventMachine {
+class Identifier extends Ledger {
   constructor (doc, identifiers) {
     super(doc)
     this._identifiers = identifiers
@@ -38,7 +35,7 @@ class Identifier extends EventMachine {
     if (this.signingKey) return publicKeyToDidKey(this.signingKey)
   }
 
-  initialState () {
+  getInitialState () {
     return {
       services: []
     }
@@ -59,20 +56,18 @@ class Identifier extends EventMachine {
   }
 
   async addService (service) {
-    await this.appendEvent('serviceAdded', { service })
+    await this.appendEvent('Added Service', { service })
   }
 
   async removeService (serviceId) {
-    await this.appendEvent('serviceRemoved', { serviceId })
+    await this.appendEvent('Removed Service', { serviceId })
   }
 
   async addProfile (profile) {
-    await this.appendEvent('serviceAdded', {
-      service: {
-        id: profile.id,
-        type: 'jlinx.profile',
-        serviceEndpoint: profile.serviceEndpoint
-      }
+    await this.addService({
+      id: profile.id,
+      type: 'jlinx.profile',
+      serviceEndpoint: profile.serviceEndpoint
     })
   }
 
@@ -85,7 +80,7 @@ class Identifier extends EventMachine {
 
 Identifier.events = {
 
-  serviceAdded: {
+  'Added Service': {
     schema: {
       type: 'object',
       properties: {
@@ -120,7 +115,7 @@ Identifier.events = {
     }
   },
 
-  serviceRemoved: {
+  'Removed Service': {
     schema: {
       type: 'object',
       properties: {

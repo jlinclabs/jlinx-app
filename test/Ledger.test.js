@@ -43,7 +43,7 @@ test('subclassing', async (t) => {
   t.exception(
     () => {
       MagicChest.events = {
-        'Moved Document': {},
+        'Moved Document': {}
       }
     },
     'refusing to override Ledger event "Moved Document"'

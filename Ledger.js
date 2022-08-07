@@ -21,7 +21,7 @@ class Ledger {
   }
 
   static set events (events) {
-    if (this === Ledger || this.hasOwnProperty('_events')){
+    if (this === Ledger || hasOwnProperty(this, '_events')) {
       throw new Error(`events for ${this.name} already locked in. Subclass to extend`)
     }
     this._events = safeAssign(
@@ -46,7 +46,10 @@ class Ledger {
   get signingKey () {
     return (
       this.doc._header?.signingKey ||
-      this.doc.ownerSigningKeys && multibase.encode(this.doc.ownerSigningKeys.publicKey)
+      (
+        this.doc.ownerSigningKeys &&
+        multibase.encode(this.doc.ownerSigningKeys.publicKey)
+      )
     )
   }
 
@@ -114,7 +117,7 @@ class Ledger {
       if (!valid) {
         debug('INVALID EVENT SIGNATURE', event)
         throw new Error(
-          `ledger event signature invalid. index=${index}`
+          `ledger event signature invalid. event=${buffer}`
         )
       }
     }
@@ -196,6 +199,7 @@ class Ledger {
 
   // TODO return an streamable that fetches and verfies
   // events on-demand
+  // TODO allow getting of events after a given length
   async events () {
     const { id, length } = this
     const entries = await this.doc.all()
@@ -349,12 +353,11 @@ const BASE_EVENTS = compileEvents({
   }
 })
 
-
-function safeAssign(target, ...objects){
-  for (const object of objects){
+function safeAssign (target, ...objects) {
+  for (const object of objects) {
     if (object === undefined || object === null) continue
-    for (const key in object){
-      if (key in target){
+    for (const key in object) {
+      if (key in target) {
         throw new Error(`refusing to override Ledger event "${key}"`)
       }
       target[key] = object[key]
@@ -362,3 +365,6 @@ function safeAssign(target, ...objects){
   }
   return target
 }
+
+const hasOwnProperty = (object, prop) =>
+  Object.prototype.hasOwnProperty.call(object, prop)

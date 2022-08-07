@@ -1,8 +1,4 @@
-const Debug = require('debug')
 const { compileSchemaValidator } = require('./schema')
-const Ledger = require('./Ledger')
-
-const debug = Debug('jlinx:client:events')
 
 exports.compileEvents = function compileEvents (events) {
   const cEvents = {}
@@ -40,15 +36,4 @@ function makeNullSchemaValidator () {
     return false
   }
   return nullSchemaValidator
-}
-
-function mergeEvents (events, newEvents) {
-  // find the first newEvent that references an existing event
-  // join an order new events into existing events
-  //
-
-}
-
-function purgeEvents () {
-
 }
