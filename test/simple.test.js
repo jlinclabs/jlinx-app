@@ -95,7 +95,7 @@ const { test, createJlinxClient } = require('./helpers/test.js')
 //   t.end()
 // })
 
-test('sync diff host', async (t) => {
+test('sync across differend hosts', async (t) => {
   const client1 = await createJlinxClient(t)
   const client2 = await createJlinxClient(t)
 

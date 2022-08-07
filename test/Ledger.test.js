@@ -51,8 +51,6 @@ test('subclassing', async (t) => {
 })
 
 test('Ledger', async (t) => {
-  // const { createHttpServers, createJlinxClient } = await createTestnet(t)
-  // const [host1, host2] = await createHttpServers(2)
   const client = await createJlinxClient(t)
   const ledger = await client.create({ class: Ledger })
 
@@ -98,7 +96,8 @@ test('Ledger', async (t) => {
     t.is(events.length, 1)
     t.alike(events[0], {
       '@event': 'Opened Document',
-      '@eventId': events[0]['@eventId']
+      '@eventId': events[0]['@eventId'],
+      "@eventCause": []
     })
     expectedEvents.push(events[0])
   }
@@ -137,7 +136,8 @@ test('Ledger', async (t) => {
     t.is(events.length, 2)
     t.alike(events[1], {
       '@event': 'Closed Document',
-      '@eventId': events[1]['@eventId']
+      '@eventId': events[1]['@eventId'],
+      "@eventCause": []
     })
     expectedEvents.push(events[1])
   }
@@ -286,7 +286,8 @@ test('Chest as subclass of Ledger', async (t) => {
     t.is(events.length, 1)
     t.alike(events[0], {
       '@event': 'Opened Chest',
-      '@eventId': events[0]['@eventId']
+      '@eventId': events[0]['@eventId'],
+      "@eventCause": []
     })
     expectedEvents.push(events[0])
   }
@@ -418,11 +419,13 @@ test('Chest as subclass of Ledger', async (t) => {
     t.alike(await chest.events(), [
       {
         '@event': 'Opened Chest',
-        '@eventId': events[0]['@eventId']
+        '@eventId': events[0]['@eventId'],
+        "@eventCause": []
       },
       {
         '@event': 'Added Item',
         '@eventId': events[1]['@eventId'],
+        "@eventCause": [],
         item: {
           desc: 'Iron Sword',
           id: 'sword123456',
@@ -431,15 +434,18 @@ test('Chest as subclass of Ledger', async (t) => {
       },
       {
         '@event': 'Closed Chest',
-        '@eventId': events[2]['@eventId']
+        '@eventId': events[2]['@eventId'],
+        "@eventCause": []
       },
       {
         '@event': 'Opened Chest',
-        '@eventId': events[3]['@eventId']
+        '@eventId': events[3]['@eventId'],
+        "@eventCause": []
       },
       {
         '@event': 'Added Item',
         '@eventId': events[4]['@eventId'],
+        "@eventCause": [],
         item: {
           desc: 'Iron Sheild',
           id: 'shield9876',
@@ -448,15 +454,18 @@ test('Chest as subclass of Ledger', async (t) => {
       },
       {
         '@event': 'Closed Chest',
-        '@eventId': events[5]['@eventId']
+        '@eventId': events[5]['@eventId'],
+        "@eventCause": []
       },
       {
         '@event': 'Opened Chest',
-        '@eventId': events[6]['@eventId']
+        '@eventId': events[6]['@eventId'],
+        "@eventCause": []
       },
       {
         '@event': 'Removed Item',
         '@eventId': events[7]['@eventId'],
+        "@eventCause": [],
         itemId: 'shield9876'
       }
     ])

@@ -40,9 +40,12 @@ class Ledger {
 
   get id () { return this.doc.id }
   get length () { return this.doc.length }
+  get version () { return this.doc.length + 1 }
   get writable () { return this.doc.writable }
   get contentType () { return this.doc._header?.contentType }
   get host () { return this.doc._header?.host }
+  // get open () { return !!this.doc.state?.open }
+  // get closed () { return !!this.doc.state?.closed }
   get signingKey () {
     return (
       this.doc._header?.signingKey ||
@@ -98,6 +101,7 @@ class Ledger {
     }
     await this.doc.create({ ...opts, header })
     debug('Ledger created', this)
+    // await this.openDocument()
   }
 
   async _verify (event) {
@@ -170,15 +174,17 @@ class Ledger {
       // throw new Error(`invalid event payload: ${JSON.stringify(errors)}`)
     }
     if (eventSpec.validate) {
-      // TODO: consider this.update() here?
+      if (!this.state) await this.update()
       const errorMessage = eventSpec.validate(this.state, payload)
       if (errorMessage) throw new Error(`${errorMessage}`)
     }
 
+    // TODO: consider this.update() before determining @eventCause entries
     const event = {
       ...payload,
       '@event': eventName,
-      '@eventId': jtil.createRandomString(5)
+      '@eventId': jtil.createRandomString(5),
+      '@eventCause': []
     }
     const json = b4a.from(jsonCanonicalize(event))
     const signature = await this.doc.ownerSigningKeys.sign(json)
@@ -279,21 +285,21 @@ const BASE_EVENTS = compileEvents({
     schema: {
       type: 'object',
       properties: {
-        'document type': {
-          type: 'string'
-        },
-        'cryptographic signing key': {
-          type: 'string'
-        },
-        // "hyperswarm id" (optional) to get the latest more agressively
-        'hyperswarm id': {
-          type: 'string'
-        },
-        // "host url" (optional) to get the latest more agressively
-        'host url': {
-          type: 'string'
-          // TODO pattern
-        }
+        // 'document type': {
+        //   type: 'string'
+        // },
+        // 'cryptographic signing key': {
+        //   type: 'string'
+        // },
+        // // "hyperswarm id" (optional) to get the latest more agressively
+        // 'hyperswarm id': {
+        //   type: 'string'
+        // },
+        // // "host url" (optional) to get the latest more agressively
+        // 'host url': {
+        //   type: 'string'
+        //   // TODO pattern
+        // }
       },
       required: [
         // 'document type',
@@ -301,13 +307,14 @@ const BASE_EVENTS = compileEvents({
       ],
       additionalProperties: true
     },
-    validate (state, doc) {
-      if (doc.length > 0) { if (state.open) return 'cannot open already open chest' }
+    validate (state) {
+      if (state.documentOpen) return 'cannot re-open already open document'
+      if (state.documentClosed) return 'cannot re-open closed document'
     },
     apply (state) {
       state = { ...state }
-      state.open = true
-      state.signingKey = state['cryptographic signing key']
+      state.documentOpen = true
+      // state.signingKey = state['cryptographic signing key']
       return state
     }
   },
@@ -321,11 +328,14 @@ const BASE_EVENTS = compileEvents({
       additionalProperties: true
     },
     validate (state, doc) {
+      if (state.documentMoved) return 'cannot close already moved document'
+      if (!state.documentOpen) return 'cannot close un-opened document'
+      if (state.documentClosed) return 'cannot close already closed document'
     },
     apply (state) {
-      // const state = { ...state }
-      // state.open = true
-      // state.signingKey = state['cryptographic signing key']
+      state = { ...state }
+      state.documentOpen = false
+      state.documentClosed = true
       return state
     }
   },
@@ -333,15 +343,23 @@ const BASE_EVENTS = compileEvents({
     schema: {
       type: 'object',
       properties: {
+        id: { type: 'string' }
       },
       required: [
+        'id'
       ],
       additionalProperties: true
     },
-    validate (state, doc) {
+    validate (state, payload) {
+      if (state.documentMoved) return 'cannot move already moved document'
+      if (!state.documentOpen) return 'cannot move un-opened document'
+      if (state.documentClosed) return 'cannot move closed document'
     },
-    apply (state) {
-      // const state = { ...state }
+    apply (state, payload) {
+      state = { ...state }
+      state.documentMoved = {
+        id: payload.id,
+      }
       // state.open = true
       // state.signingKey = state['cryptographic signing key']
       return state

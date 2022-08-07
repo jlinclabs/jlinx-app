@@ -20,6 +20,7 @@ test('Contracts', async (t) => {
 
   bob.contract = await bob.client.contracts.create()
   await bob.contract.update()
+  console.log('EVENTS', await bob.contract.events())
   const contractId = bob.contract.id
 
   t.alike(await bob.contract.events(), [])
