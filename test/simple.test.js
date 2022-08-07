@@ -105,7 +105,7 @@ test('sync diff host', async (t) => {
   t.alike(await doc1.header(), {
     contentType: 'application/octet-stream',
     host: client1.host.url,
-    signingKey: multibase.encode(doc1.ownerSigningKeys.publicKey),
+    signingKey: multibase.encode(doc1.ownerSigningKeys.publicKey)
   })
   t.alike(doc1.writable, true)
   t.alike(doc1.host, client1.host)
@@ -148,7 +148,7 @@ test('sync diff host', async (t) => {
       {
         contentType: 'application/octet-stream',
         host: client1.host.url,
-        signingKey: multibase.encode(doc1.ownerSigningKeys.publicKey),
+        signingKey: multibase.encode(doc1.ownerSigningKeys.publicKey)
       }
     )
     t.alike(
