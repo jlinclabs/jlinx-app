@@ -88,7 +88,7 @@ module.exports = class RemoteDocument {
     if (!entry) {
       entry = await this.host.getEntry(this.id, index)
       this._cache[index] = entry
-    }else {
+    } else {
       cached = true
     }
     debug('get', index, cached ? 'CACHED' : '')

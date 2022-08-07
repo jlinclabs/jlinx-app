@@ -122,12 +122,12 @@ class Ledger {
       }
     }
 
-    const eventSpec = this._getEventSpec(event['@event'])
+    const eventId = event['@event']
+    const eventSpec = this._getEventSpec(eventId)
     const payload = extractPayload(event)
     if (!eventSpec || !eventSpec.schemaValidate(payload)) {
       const errors = eventSpec?.schemaValidate?.errors
       debug('INVALID EVENT: doesnt match schema', { event, payload, errors })
-
       throw new Error(
         `ledger event doesnt match schema ${eventId}: ` +
         errors.map(e =>
@@ -365,9 +365,8 @@ function safeAssign (target, ...objects) {
 const hasOwnProperty = (object, prop) =>
   Object.prototype.hasOwnProperty.call(object, prop)
 
-
-function extractPayload(event){
-  const payload = {...event}
+function extractPayload (event) {
+  const payload = { ...event }
   delete payload['@event']
   delete payload['@eventId']
   delete payload['@signature']

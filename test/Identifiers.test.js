@@ -145,7 +145,6 @@ test('creating a did document', async (t) => {
     }
   )
 
-
   // t.alike(identifier.events, [
   //   {
   //     '@event': 'serviceAdded',
@@ -207,7 +206,7 @@ test('creating a did document', async (t) => {
     t.alike(events[3], {
       '@event': 'Removed Service',
       '@eventId': events[3]['@eventId'],
-      serviceId: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05',
+      serviceId: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05'
     })
     expectedEvents.push(events[3])
   }

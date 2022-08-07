@@ -36,7 +36,6 @@ test('Contracts', async (t) => {
 
   {
     const events = await bob.contract.events()
-    console.log({ events })
     t.is(events.length, 1)
     t.alike(events, [
       {
