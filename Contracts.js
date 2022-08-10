@@ -14,30 +14,16 @@ module.exports = class Contracts {
     })
   }
 
-  async get (id) {
+  async get (id, opts = {}) {
     debug('get', { id })
     return await this.jlinx.get(id, {
       ...opts,
       class: Contract
     })
   }
-
-  // async getParty (id) {
-  //   debug('getParty', { id })
-  //   return await this._open(ContractParty, id)
-  // }
-
-  // async _open (Class, id) {
-  //   await this.jlinx.connected()
-  //   const doc = await this.jlinx.get(id)
-  //   const inst = new Class(doc, this)
-  //   await inst.update()
-  //   return inst
-  // }
 }
 
 class Contract extends Ledger {
-
   constructor (doc, contracts) {
     super(doc)
     this._contracts = contracts
@@ -49,48 +35,6 @@ class Contract extends Ledger {
   get contractUrl () { return this._value?.contractUrl }
   get offerer () { return this._value?.offerer }
   get signatureDropoffUrl () { return this._value?.signatureDropoffUrl }
-
-  // async events () {
-  //   let events = await this.doc.entries()
-  //   events = events.slice(1) // cut header
-  //   for (const event of events) {
-  //     if (event.event === 'signerResponded') {
-  //       const contractResponse = await this._contracts.getParty(event.contractResponseId)
-  //       const moreEvents = await contractResponse.events()
-  //       events = [...events, ...moreEvents] // TODO some magic sorting
-  //     }
-  //   }
-  //   return events
-  // }
-
-  // async update () {
-  //   await this.doc.update()
-  //   const value = {}
-  //   value.contractId = this.id
-  //   const events = await this.events()
-  //   while (events.length > 0) {
-  //     const event = events.shift()
-  //     if (event.event === 'offered') {
-  //       value.state = 'offered'
-  //       value.contractUrl = event.contractUrl
-  //       value.offerer = event.offerer
-  //       value.signatureDropoffUrl = event.signatureDropoffUrl
-  //       value.jlinxHost = event.jlinxHost
-  //     } else if (event.event === 'signerResponded') {
-  //       // const contractResponse =
-  //       //   await this._contracts.getParty(event.contractResponseId)
-  //       // const moreEvents = await contractResponse.events()
-  //       // events = [...events, ...moreEvents]
-  //       value.state = 'signed'
-  //       value.signatureId = event.contractResponseId
-  //     } else if (event.event === 'signed') {
-  //       value.signer = event.signer
-  //     } else {
-  //       console.warn('ignoring event', event)
-  //     }
-  //   }
-  //   this._value = value
-  // }
 
   async offerContract (options = {}) {
     const {
@@ -111,10 +55,10 @@ class Contract extends Ledger {
 
   async reject (opts) { return await this._resolve('reject', opts) }
   async sign (opts) { return await this._resolve('sign', opts) }
-  async _resolve (move, opts) {
 
+  async _resolve (move, opts) {
     // create a new ledgers for the current user's write steam
-    const doc = await this._contracts.jlinx.create(opts)
+    // const doc = await this._contracts.jlinx.create(opts)
     // const contractParty = await ContractParty.create(doc, this._contracts)
     // await contractParty[move]({ ...opts, contract: this })
     // return contractParty
@@ -149,7 +93,7 @@ Contract.events = {
   },
   'Signed Contract': {
 
-  },
+  }
 }
 
 // class ContractParty {

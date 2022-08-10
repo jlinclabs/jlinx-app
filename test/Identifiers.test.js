@@ -112,6 +112,7 @@ test('creating a did document', async (t) => {
     t.alike(events[0], {
       '@event': 'Added Service',
       '@eventId': events[0]['@eventId'],
+      // "@eventCause": [],
       service: {
         id: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05',
         type: 'jlinx.profile',
@@ -168,6 +169,7 @@ test('creating a did document', async (t) => {
     t.alike(events[1], {
       '@event': 'Added Service',
       '@eventId': events[1]['@eventId'],
+      // "@eventCause": [],
       service: {
         id: 'c23a5415df0bff723ff056e9832b2034619a25941f27ebea08a5cf044a525133',
         type: 'medicaldata.controller',
@@ -189,6 +191,7 @@ test('creating a did document', async (t) => {
     t.alike(events[2], {
       '@event': 'Added Service',
       '@eventId': events[2]['@eventId'],
+      // "@eventCause": [],
       service: {
         id: '44a5251332b2034615df0bff723ff056e9837ebea08a5cf09a25941f2c23a541',
         type: 'inbox',
@@ -206,6 +209,7 @@ test('creating a did document', async (t) => {
     t.alike(events[3], {
       '@event': 'Removed Service',
       '@eventId': events[3]['@eventId'],
+      // "@eventCause": [],
       serviceId: '6e9837ebea08a5cf044a5251332b2034619a25941f2c23a5415df0bff723ff05'
     })
     expectedEvents.push(events[3])
@@ -223,6 +227,7 @@ test('creating a did document', async (t) => {
     t.alike(events[4], {
       '@event': 'Added Service',
       '@eventId': events[4]['@eventId'],
+      // "@eventCause": [],
       service: {
         id: '37eb6e98ea08a5cf0442034619a25941f2ca5251332b23a5415df0bff72ff053',
         type: 'jlinx.profile',

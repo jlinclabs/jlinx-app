@@ -31,7 +31,7 @@ class Ledger {
     )
   }
 
-  static become(ledger){
+  static become (ledger) {
 
   }
 
@@ -48,8 +48,7 @@ class Ledger {
   get writable () { return this.doc.writable }
   get contentType () { return this.doc._header?.contentType }
   get host () { return this.doc._header?.host }
-  // get open () { return !!this.doc.state?.open }
-  // get closed () { return !!this.doc.state?.closed }
+
   get signingKey () {
     return (
       this.doc._header?.signingKey ||
@@ -128,15 +127,14 @@ class Ledger {
         )
       }
     }
-
-    const eventId = event['@event']
-    const eventSpec = this._getEventSpec(eventId)
+    const eventType = event['@event']
+    const eventSpec = this._getEventSpec(eventType)
     const payload = extractPayload(event)
     if (!eventSpec || !eventSpec.schemaValidate(payload)) {
-      const errors = eventSpec?.schemaValidate?.errors
+      const errors = eventSpec?.schemaValidate?.errors || []
       debug('INVALID EVENT: doesnt match schema', { event, payload, errors })
       throw new Error(
-        `ledger event doesnt match schema ${eventId}: ` +
+        `ledger event doesnt match schema ${eventType}: ` +
         errors.map(e =>
           (e.instancePath ? `${e.instancePath} ` : '') + e.message
         ).join(', ')
@@ -147,15 +145,6 @@ class Ledger {
     return event
   }
 
-  // // TODO only check signature on first get
-  // async getEvent (index, verify = false) {
-  //   if (index > this.length - 1) return
-  //   const buffer = await this.doc.get(index)
-  //   const event = await this._unpackEvent(buffer, index > 0 && verify)
-  //   debug('getEvent', { index, event })
-  //   return event
-  // }
-
   _getEventSpec (eventName) {
     return this.constructor.events[eventName]
   }
@@ -164,7 +153,7 @@ class Ledger {
     payload = extractPayload(payload) // strip protected props
     const eventSpec = this._getEventSpec(eventName)
     if (!eventSpec) throw new Error(`invalid event "${eventName}"`)
-    // console.log({ eventSpec })
+
     if (!eventSpec.schemaValidate(payload)) {
       const errors = eventSpec.schemaValidate.errors
       // console.error(`invalid event payload`, {eventName, payload, errors})
@@ -182,12 +171,11 @@ class Ledger {
       if (errorMessage) throw new Error(`${errorMessage}`)
     }
 
-    // TODO: consider this.update() before determining @eventCause entries
     const event = {
       ...payload,
       '@event': eventName,
-      '@eventId': jtil.createRandomString(5),
-      '@eventCause': []
+      '@eventId': jtil.createRandomString(5)
+      // '@eventCause': [] // TBD
     }
     const json = b4a.from(jsonCanonicalize(event))
     const signature = await this.doc.ownerSigningKeys.sign(json)
@@ -206,18 +194,6 @@ class Ledger {
   // events on-demand
   // TODO allow getting of events after a given length
   async events () {
-
-
-    /**
-     * docs = [givenDoc]
-     * util we find an 'Opened Document' event
-     *   look at the current documents first and latest events
-     *   if ( the first event said it was became another document )
-     *     docs.unshift(parentDoc)
-     *
-     */
-
-
     const { id, length } = this
     const entries = await this.doc.all()
     if (entries.length !== length) {
@@ -238,21 +214,9 @@ class Ledger {
       }
       events.push(event)
     }
-
-    let firstEvent = events[0]
-    // loop back docs to find first one?
-    while (firstEvent['@type'] === 'Became Document'){
-      console.log({ firstEvent })
-      if (firstEvent['@type'] === 'Became Document'){
-        const prevDoc = await this.doc.client.get(firstEvent.id)
-
-      }
-    }
-    // let [header, ...events] = entries
-    debug('GOT events', { id, length, events })
+    debug('events', { id, length, events })
     return events
   }
-
 
   async update () {
     await this.doc.update()
@@ -301,31 +265,30 @@ class Ledger {
     await this.appendEvent('Closed Document', {})
   }
 
-  async moveDocument ({ id }) {
-    if (!id) throw new Error(`id is required`)
-    const newDoc = await this.doc.client.get(id)
-    await newDoc.update()
-    console.log('moveDocument', newDoc)
-    await this.appendEvent('Moved Document', { id: newDoc.id })
-  }
+  // async moveDocument ({ id }) {
+  //   if (!id) throw new Error('id is required')
+  //   const newDoc = await this.doc.client.get(id)
+  //   await newDoc.update()
+  //   console.log('moveDocument', newDoc)
+  //   await this.appendEvent('Moved Document', { id: newDoc.id })
+  // }
 
-  async becomeDocument ({ id }) {
-    if (this.id === id) {
-      throw new Error(`cannot become self`)
-    }
-    const oldDoc = await this.doc.client.get(id)
-    await oldDoc.update()
-    console.log('BECOMING', { oldDoc })
-    const lastEvent = await oldDoc.get(oldDoc.length - 1)
-    // TODO dry up how to parse events
-    console.log('LATEST EVENT', JSON.parse(lastEvent))
-    const { '@eventId': latestEventId } = JSON.parse(lastEvent)
-    await this.appendEvent('Became Document', {
-      id,
-      latestEventId,
-    })
-
-  }
+  // async becomeDocument ({ id }) {
+  //   if (this.id === id) {
+  //     throw new Error('cannot become self')
+  //   }
+  //   const oldDoc = await this.doc.client.get(id)
+  //   await oldDoc.update()
+  //   console.log('BECOMING', { oldDoc })
+  //   const lastEvent = await oldDoc.get(oldDoc.length - 1)
+  //   // TODO dry up how to parse events
+  //   console.log('LATEST EVENT', JSON.parse(lastEvent))
+  //   const { '@eventId': latestEventId } = JSON.parse(lastEvent)
+  //   await this.appendEvent('Became Document', {
+  //     id,
+  //     latestEventId
+  //   })
+  // }
 }
 
 module.exports = Ledger
@@ -391,63 +354,63 @@ const BASE_EVENTS = compileEvents({
       state.documentClosed = true
       return state
     }
-  },
-  'Moved Document': {
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string' }
-      },
-      required: [
-        'id'
-      ],
-      additionalProperties: true
-    },
-    validate (state, payload) {
-      if (state.documentMoved) return 'cannot move already moved document'
-      if (!state.documentOpen) return 'cannot move un-opened document'
-      if (state.documentClosed) return 'cannot move closed document'
-    },
-    apply (state, payload) {
-      state = { ...state }
-      state.documentMoved = {
-        id: payload.id,
-      }
-      // state.open = true
-      // state.signingKey = state['cryptographic signing key']
-      return state
-    }
-  },
-  'Became Document': {
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string' },
-        latestEventId: { type: 'string' }
-      },
-      required: [
-        'id'
-      ],
-      additionalProperties: true
-    },
-    validate (state, payload) {
-      if (state.documentOpen) return 'cannot become another document, already opened'
-      if (state.documentClosed) return 'cannot become another document, already closed'
-      // todo validate payload.id
-    },
-    apply (state, payload) {
-      state = { ...state }
-      state.documentOpen = true
-      state.documentWas = payload.id
-      state.latestEventId = payload.latestEventId
-      // state.documentMoved = {
-      //   id: payload.id,
-      // }
-      // state.open = true
-      // state.signingKey = state['cryptographic signing key']
-      return state
-    }
   }
+  // 'Moved Document': {
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       id: { type: 'string' }
+  //     },
+  //     required: [
+  //       'id'
+  //     ],
+  //     additionalProperties: true
+  //   },
+  //   validate (state, payload) {
+  //     if (state.documentMoved) return 'cannot move already moved document'
+  //     if (!state.documentOpen) return 'cannot move un-opened document'
+  //     if (state.documentClosed) return 'cannot move closed document'
+  //   },
+  //   apply (state, payload) {
+  //     state = { ...state }
+  //     state.documentMoved = {
+  //       id: payload.id
+  //     }
+  //     // state.open = true
+  //     // state.signingKey = state['cryptographic signing key']
+  //     return state
+  //   }
+  // },
+  // 'Became Document': {
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       id: { type: 'string' },
+  //       latestEventId: { type: 'string' }
+  //     },
+  //     required: [
+  //       'id'
+  //     ],
+  //     additionalProperties: true
+  //   },
+  //   validate (state, payload) {
+  //     if (state.documentOpen) return 'cannot become another document, already opened'
+  //     if (state.documentClosed) return 'cannot become another document, already closed'
+  //     // todo validate payload.id
+  //   },
+  //   apply (state, payload) {
+  //     state = { ...state }
+  //     state.documentOpen = true
+  //     state.documentWas = payload.id
+  //     state.latestEventId = payload.latestEventId
+  //     // state.documentMoved = {
+  //     //   id: payload.id,
+  //     // }
+  //     // state.open = true
+  //     // state.signingKey = state['cryptographic signing key']
+  //     return state
+  //   }
+  // }
 })
 
 function safeAssign (target, ...objects) {

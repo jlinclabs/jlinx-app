@@ -43,10 +43,10 @@ test('subclassing', async (t) => {
   t.exception(
     () => {
       MagicChest.events = {
-        'Moved Document': {}
+        'Opened Document': {}
       }
     },
-    'refusing to override Ledger event "Moved Document"'
+    'refusing to override Ledger event "Opened Document"'
   )
 })
 
@@ -97,7 +97,7 @@ test('Ledger', async (t) => {
     t.alike(events[0], {
       '@event': 'Opened Document',
       '@eventId': events[0]['@eventId'],
-      "@eventCause": []
+      '@eventCause': []
     })
     expectedEvents.push(events[0])
   }
@@ -137,7 +137,7 @@ test('Ledger', async (t) => {
     t.alike(events[1], {
       '@event': 'Closed Document',
       '@eventId': events[1]['@eventId'],
-      "@eventCause": []
+      '@eventCause': []
     })
     expectedEvents.push(events[1])
   }
@@ -287,7 +287,7 @@ test('Chest as subclass of Ledger', async (t) => {
     t.alike(events[0], {
       '@event': 'Opened Chest',
       '@eventId': events[0]['@eventId'],
-      "@eventCause": []
+      '@eventCause': []
     })
     expectedEvents.push(events[0])
   }
@@ -420,12 +420,12 @@ test('Chest as subclass of Ledger', async (t) => {
       {
         '@event': 'Opened Chest',
         '@eventId': events[0]['@eventId'],
-        "@eventCause": []
+        '@eventCause': []
       },
       {
         '@event': 'Added Item',
         '@eventId': events[1]['@eventId'],
-        "@eventCause": [],
+        '@eventCause': [],
         item: {
           desc: 'Iron Sword',
           id: 'sword123456',
@@ -435,17 +435,17 @@ test('Chest as subclass of Ledger', async (t) => {
       {
         '@event': 'Closed Chest',
         '@eventId': events[2]['@eventId'],
-        "@eventCause": []
+        '@eventCause': []
       },
       {
         '@event': 'Opened Chest',
         '@eventId': events[3]['@eventId'],
-        "@eventCause": []
+        '@eventCause': []
       },
       {
         '@event': 'Added Item',
         '@eventId': events[4]['@eventId'],
-        "@eventCause": [],
+        '@eventCause': [],
         item: {
           desc: 'Iron Sheild',
           id: 'shield9876',
@@ -455,95 +455,93 @@ test('Chest as subclass of Ledger', async (t) => {
       {
         '@event': 'Closed Chest',
         '@eventId': events[5]['@eventId'],
-        "@eventCause": []
+        '@eventCause': []
       },
       {
         '@event': 'Opened Chest',
         '@eventId': events[6]['@eventId'],
-        "@eventCause": []
+        '@eventCause': []
       },
       {
         '@event': 'Removed Item',
         '@eventId': events[7]['@eventId'],
-        "@eventCause": [],
+        '@eventCause': [],
         itemId: 'shield9876'
       }
     ])
   }
 })
 
+// // I THINK WE SHOULD GIVE UP ON MOVING A LEDGER RIGHT NOW!!!
+// // merging streams will be hard enough
+// test.solo('moving a ledger', async (t) => {
+//   class TwitterFeed extends Ledger {
+//     getInitialState () {
+//       return { tweets: [] }
+//     }
 
+//     async tweet (message) {
+//       this.appendEvent('Tweeted', { message })
+//     }
+//   }
 
-// I THINK WE SHOULD GIVE UP ON MOVING A LEDGER RIGHT NOW!!!
-// merging streams will be hard enough
-test.solo('moving a ledger', async (t) => {
+//   TwitterFeed.events = {
+//     Tweeted: {
+//       schema: {},
+//       apply (state, tweet) {
+//         state.tweets.push(tweet)
+//         return state
+//       }
+//     }
+//   }
 
-  class TwitterFeed extends Ledger {
-    getInitialState(){
-      return { tweets: [] }
-    }
-    async tweet(message){
-      this.appendEvent('Tweeted', { message })
-    }
-  }
-  TwitterFeed.events = {
-    'Tweeted': {
-      schema: {},
-      apply (state, tweet) {
-        state.tweets.push(tweet)
-        return state
-      }
-    }
-  }
+//   const client1 = await createJlinxClient(t)
+//   const client2 = await createJlinxClient(t)
 
-  const client1 = await createJlinxClient(t)
-  const client2 = await createJlinxClient(t)
+//   const feed1 = await client1.create({ class: TwitterFeed })
+//   await logLedger('feed1', feed1)
+//   await feed1.openDocument({ something: 'special' })
+//   await logLedger('feed1 after open', feed1)
 
-  const feed1 = await client1.create({ class: TwitterFeed })
-  await logLedger('feed1', feed1)
-  await feed1.openDocument({ something: 'special' })
-  await logLedger('feed1 after open', feed1)
+//   await feed1.tweet('this is my first post')
+//   await feed1.tweet('this is my 2nd post')
 
-  await feed1.tweet('this is my first post')
-  await feed1.tweet('this is my 2nd post')
+//   const feed2 = await client2.create({ class: TwitterFeed })
+//   await logLedger('feed2', feed2)
+//   await feed2.becomeDocument({ id: feed1.id })
+//   await logLedger('feed2 after feed2.becomeDocument', feed2)
+//   await logLedger('feed1 after feed2.becomeDocument (no change)', feed1)
+//   await feed1.moveDocument({ id: feed2.id })
+//   await logLedger('feed1 after feed1.moveDocument', feed1)
+//   await feed2.update()
+//   await logLedger('feed2 after feed1.moveDocument', feed2)
 
-  const feed2 = await client2.create({ class: TwitterFeed })
-  await logLedger('feed2', feed2)
-  await feed2.becomeDocument({ id: feed1.id })
-  await logLedger('feed2 after feed2.becomeDocument', feed2)
-  await logLedger('feed1 after feed2.becomeDocument (no change)', feed1)
-  await feed1.moveDocument({ id: feed2.id })
-  await logLedger('feed1 after feed1.moveDocument', feed1)
-  await feed2.update()
-  await logLedger('feed2 after feed1.moveDocument', feed2)
+//   await feed2.tweet('this is my third post')
+//   await logLedger('feed1 after feed2.tweet (no change)', feed1)
+//   await logLedger('feed2 after feed2.tweet (no change)', feed2)
 
-  await feed2.tweet('this is my third post')
-  await logLedger('feed1 after feed2.tweet (no change)', feed1)
-  await logLedger('feed2 after feed2.tweet (no change)', feed2)
+//   /**
+//    * THIS IS HARD!!
+//    *
+//    * how do we track state across multiple hypercores?
+//    * is like we need some state for each individual hypercore stream
+//    * and then combined state on top of that
+//    *
+//    * thing.events() should be able to pull events from a thrise moved
+//    * document and transparently give you events, excluding the document
+//    * events. those are almost meta events?
+//    *
+//    *
+//    */
 
-  /**
-   * THIS IS HARD!!
-   *
-   * how do we track state across multiple hypercores?
-   * is like we need some state for each individual hypercore stream
-   * and then combined state on top of that
-   *
-   * thing.events() should be able to pull events from a thrise moved
-   * document and transparently give you events, excluding the document
-   * events. those are almost meta events?
-   *
-   *
-   */
+//   const client3 = await createJlinxClient(t)
+// })
 
-  const client3 = await createJlinxClient(t)
-})
-
-
-const logLedger = async (desc, ledger) => {
-  await ledger.update()
-  console.log(desc, '\n', ledger, {
-    header: await ledger.header(),
-    events: await ledger.events(),
-    state: ledger.state,
-  })
-}
+// const logLedger = async (desc, ledger) => {
+//   await ledger.update()
+//   console.log(desc, '\n', ledger, {
+//     header: await ledger.header(),
+//     events: await ledger.events(),
+//     state: ledger.state
+//   })
+// }
