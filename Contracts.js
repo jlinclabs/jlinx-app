@@ -30,13 +30,22 @@ class Contract extends Ledger {
   }
 
   get id () { return this.doc.id }
-  get value () { return this._value }
-  get state () { return this._value?.state }
-  get contractUrl () { return this._value?.contractUrl }
-  get offerer () { return this._value?.offerer }
-  get signatureDropoffUrl () { return this._value?.signatureDropoffUrl }
+  get contractUrl () { return this.state?.contractUrl }
+  get offerer () { return this.state?.offerer }
+  get signatureDropoffUrl () { return this.state?.signatureDropoffUrl }
+
+  get isOffered () { return !!this.state?.offered }
+  get isSigned () { return !!this.state?.signed }
+
+  // getInitialState () {
+  //   return {
+  //     contractId: this.id,
+  //     contractUrl: this
+  //   }
+  // }
 
   async offerContract (options = {}) {
+
     const {
       offerer,
       contractUrl,
@@ -44,12 +53,12 @@ class Contract extends Ledger {
     } = options
     if (!offerer) throw new Error('offerer is required')
     if (!contractUrl) throw new Error('contractUrl is required')
-    if (this.length > 0) throw new Error('already offered')
+    if (this.state.offeredTo) throw new Error('already offered')
     await this.appendEvent('Offered Contract', {
       offerer,
       contractUrl,
       signatureDropoffUrl,
-      jlinxHost: this._contracts.jlinx.host.url
+      // jlinxHost: this._contracts.jlinx.host.url
     })
   }
 
@@ -57,6 +66,10 @@ class Contract extends Ledger {
   async sign (opts) { return await this._resolve('sign', opts) }
 
   async _resolve (move, opts) {
+    // TODO ensure this is called by a read-only party, AKA not offered
+    const contractParty = await this.doc.client.create({ class: ContractParty })
+    await contractParty[`${move}Contract`]({ ...opts, contract: this })
+    return contractParty
     // create a new ledgers for the current user's write steam
     // const doc = await this._contracts.jlinx.create(opts)
     // const contractParty = await ContractParty.create(doc, this._contracts)
@@ -68,17 +81,20 @@ class Contract extends Ledger {
 
   async ackSignerResponse (contractResponseId) {
     await this.update()
-    // if (this.length > 0) throw new Error('already offered')
-    if (this.state !== 'offered') {
-      throw new Error('cannot acknowledge response. contract.state !== \'offered\'')
-    }
+    const contractResponse = await this.doc.client.get(contractResponseId, { class: ContractParty })
+    await contractResponse.update()
+    debug({ contractResponse }, contractResponse.state)
+    // if (this.isOffered) {
+    // if (this.isOffered && !this.isSigned) {
+    //   throw new Error('cannot acknowledge response. contract.state !== \'offered\'')
+    // }
     // const contractResponse = new ContractParty(
     //   await this._contracts.jlinx.get(contractResponseId),
     //   this._contracts
     // )
     // console.log({ contractResponse })
     // // TODO ensure right contract ID +more
-    await this.appendEvent('Signer Responded', {
+    await this.appendEvent('Acknowledged Signer Response', {
       contractResponseId
     })
   }
@@ -86,78 +102,110 @@ class Contract extends Ledger {
 
 Contract.events = {
   'Offered Contract': {
-
+    schema: {
+      type: 'object',
+      properties: {
+        offerer: { type: 'string' },
+        contractUrl: { type: 'string' },
+        signatureDropoffUrl: { type: 'string' },
+      },
+      required: [
+        'offerer',
+        'contractUrl',
+        'signatureDropoffUrl',
+      ],
+      additionalProperties: false
+    },
+    validate (state, event) {
+      if (!state.offered) 'contract already offered'
+      if (state.signed) 'contract already signed'
+    },
+    apply (state, event) {
+      state = { ...state }
+      state.offered = true
+      state.offerer = event.offerer
+      state.contractUrl = event.contractUrl
+      state.signatureDropoffUrl = event.signatureDropoffUrl
+      return state
+    }
   },
-  'Signer Responded': {
-
+  'Acknowledged Signer Response': {
+    schema: {
+      type: 'object',
+      properties: {
+        contractResponseId: { type: 'string' },
+      },
+      required: [
+        'contractResponseId',
+      ],
+      additionalProperties: false
+    },
+    validate (state, event, contract) {
+      // if (state.signed || state.rejected) return 'signed response already acknowledged'
+      if (state.contractResponseId) return 'signed response already acknowledged'
+    },
+    async apply (state, event, contract) {
+      // this is not a long-term way to merge event logs :(
+      const contractResponse = await contract.doc.client.get(event.contractResponseId, {
+        class: ContractParty
+      })
+      await contractResponse.update()
+      const { contractId, ...contractResponseState } = contractResponse.state
+      Object.assign(state, contractResponseState)
+      delete state.signatureDropoffUrl
+      // state.contractResponseId = event.contractResponseId
+      return state
+    },
   },
   'Signed Contract': {
 
   }
 }
 
-// class ContractParty {
-//   static async create (doc, contracts) {
-//     const cp = new ContractParty(doc, contracts)
-//     await cp._ledger.init()
-//     return cp
-//   }
 
-//   constructor (doc, contracts) {
-//     this._ledger = new Ledger(doc)
-//     this._contracts = contracts
-//   }
+class ContractParty extends Ledger {
 
-//   get id () { return this._ledger.id }
-//   get value () { return this._value }
-//   get state () { return this._value?.state }
-//   get contractId () { return this._value?.contractId }
-//   get contractUrl () { return this._value?.contractUrl }
-//   get offerer () { return this._value?.offerer }
+  async signContract({ contract, identifier, ...opts }){
+    await this.appendEvent('Signed Contract', {
+      contractId: contract.id,
+      identifier,
+    })
+  }
 
-//   async events () {
-//     const events = await this._ledger.entries()
-//     return events.slice(1)
-//   }
+  async rejectContract(){
+    await this.appendEvent('Rejected Contract', {
+      contractId: contract.id,
+      identifier,
+    })
+  }
+}
 
-//   async update () {
-//     await this._ledger.update()
-//     const value = {}
-//     const events = await this.events()
-//     for (const event of events) {
-//       if (
-//         event.event === 'rejected' ||
-//         event.event === 'signed'
-//       ) {
-//         value.state = event.event
-//         value.contractId = event.contractId
-//         value.signer = event.signer
-//       } else {
-//         console.warn('ignoring event', event)
-//       }
-//     }
-//     this._value = value
-//   }
+ContractParty.events = {
+  'Signed Contract': {
+    schema: {
+      type: 'object',
+      properties: {
+        contractId: { type: 'string' },
+        identifier: { type: 'string' },
+      },
+      required: [
+        'contractId',
+        'identifier',
+      ],
+      additionalProperties: false
+    },
+    validate (state, event) {
+      // if (state.signed || state.rejected) return 'signed response already acknowledged'
+      // if (state.signed) return 'signed response already acknowledged'
+    },
+    apply (state, event) {
+      state.signed = true
+      state.contractId = event.contractId
+      state.signer = event.identifier
+      return state
+    },
+  },
+  'Rejected Contract': {
 
-//   async contract () {
-//     const { contractId } = await this._ledger.get(0)
-//     return await this._contracts.get(contractId)
-//   }
-
-//   async reject ({ identifier, contractUrl }) {
-
-//   }
-
-//   async sign ({ identifier, contract }) {
-//     await contract.update()
-//     // todo if (contract.state !== 'offered')
-//     await this._ledger.append([
-//       {
-//         event: 'signed',
-//         signer: identifier,
-//         contractId: contract.id
-//       }
-//     ])
-//     // await this.update()
-//   }
-// }
+  },
+}

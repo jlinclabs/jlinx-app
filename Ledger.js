@@ -226,7 +226,7 @@ class Ledger {
     // TODO only apply new events to cached state
     // TODO persist state in local-only hypercore
     const events = await this.events()
-    let state = await this.getInitialState()
+    let state = await this.getInitialState() || {}
     while (events.length > 0) {
       const event = events.shift()
       const eventSpec = this._getEventSpec(event['@event'])
@@ -234,7 +234,10 @@ class Ledger {
         // if a new event says we've moved
         // get the new core, verify it says its became us
         // add it to this.cores.push(newCore)
-        state = eventSpec.apply(state, extractPayload(event))
+        state = await eventSpec.apply(state, extractPayload(event), this)
+        if (typeof state === 'undefined'){
+          throw new Error(`apply must return a state object! ${this.constructor.name}.events["${event['@event']}"].apply failed to`)
+        }
       }
     }
     this._state = Object.freeze(state) // TODO deep freeze
@@ -242,7 +245,7 @@ class Ledger {
     return state
   }
 
-  get state () { return this._state }
+  get state () { return this._state || {} }
 
   toJSON () {
     // TODO deep clone?

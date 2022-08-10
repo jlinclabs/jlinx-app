@@ -20,13 +20,9 @@ test('Contracts', async (t) => {
 
   bob.contract = await bob.client.contracts.create()
   await bob.contract.update()
-  console.log('EVENTS', await bob.contract.events())
   const contractId = bob.contract.id
-
   t.alike(await bob.contract.events(), [])
-  t.alike(bob.contract.value, {
-    contractId
-  })
+  t.alike(bob.contract.state, {})
 
   /**  BOB CREATES A CONTRACT  **/
   await bob.contract.offerContract({
@@ -40,9 +36,8 @@ test('Contracts', async (t) => {
     t.is(events.length, 1)
     t.alike(events, [
       {
-        // events[0]
-        jlinxHost: 'http://localhost:53543',
-        event: 'offered',
+        "@event": 'Offered Contract',
+        "@eventId": events[0]["@eventId"],
         offerer: bob.identifier.did,
         contractUrl: 'https://contracts.io/freemoney.md',
         signatureDropoffUrl: 'https://example.com/jlinx/contracts/signatures'
@@ -50,20 +45,20 @@ test('Contracts', async (t) => {
     ])
   }
 
-  t.alike(bob.contract.value, {
-    state: 'offered',
+  t.alike(bob.contract.state, {
+    offered: true,
     offerer: bob.identifier.did,
-    contractId,
     contractUrl: 'https://contracts.io/freemoney.md',
-    jlinxHost: bob.client.host.url,
     signatureDropoffUrl: 'https://example.com/jlinx/contracts/signatures'
   })
 
   /**  BOB PASSES ALICE THE CONTRACT ID  **/
   alice.contract = await alice.client.contracts.get(contractId)
-
+  await alice.contract.update()
   t.is(alice.contract.id, contractId)
   t.is(alice.contract.length, bob.contract.length)
+  t.alike(await alice.contract.events(), await bob.contract.events())
+  t.alike(alice.contract.state, bob.contract.state)
 
   /**  ALICE SIGNED THE CONTRACT  **/
   alice.contractResponse = await alice.contract.sign({
@@ -74,25 +69,30 @@ test('Contracts', async (t) => {
   /**  ALICE PASSES BACK THE SIGNATURE ID  **/
 
   await bob.contract.update()
-  t.alike(bob.contract.value, {
-    state: 'offered',
+  t.alike(bob.contract.state, {
+    offered: true,
     offerer: bob.identifier.did,
-    contractId,
     contractUrl: 'https://contracts.io/freemoney.md',
-    jlinxHost: bob.client.host.url,
     signatureDropoffUrl: 'https://example.com/jlinx/contracts/signatures'
   })
 
   await bob.contract.ackSignerResponse(aliceSignatureId)
-  await bob.contract.update()
-  t.alike(bob.contract.value, {
-    state: 'signed',
+  // await bob.contract.update()
+  t.alike(bob.contract.state, {
+    offered: true,
     offerer: bob.identifier.did,
-    contractId,
     contractUrl: 'https://contracts.io/freemoney.md',
-    jlinxHost: bob.client.host.url,
-    signatureDropoffUrl: 'https://example.com/jlinx/contracts/signatures',
+    signed: true,
     signer: alice.identifier.did,
-    signatureId: aliceSignatureId
+  })
+
+  /**  ALICE SEES HER SIGNATURE WAS ACKNOWLEDGED  **/
+  await alice.contract.update()
+  t.alike(alice.contract.state, {
+    offered: true,
+    offerer: bob.identifier.did,
+    contractUrl: 'https://contracts.io/freemoney.md',
+    signed: true,
+    signer: alice.identifier.did,
   })
 })
