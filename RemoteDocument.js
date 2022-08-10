@@ -16,6 +16,7 @@ module.exports = class RemoteDocument {
     this.writable = !!opts.ownerSigningKeys
     // set on create if loaded from cache
     this.length = opts.length
+    // todo consider using a local hypercore to cache
     this._cache = opts._cache || []
     this._opening = opts._opening || this._open()
   }

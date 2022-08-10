@@ -31,6 +31,10 @@ class Ledger {
     )
   }
 
+  static become(ledger){
+
+  }
+
   getInitialState () { return {} }
 
   constructor (doc) {
@@ -101,7 +105,6 @@ class Ledger {
     }
     await this.doc.create({ ...opts, header })
     debug('Ledger created', this)
-    // await this.openDocument()
   }
 
   async _verify (event) {
@@ -203,6 +206,18 @@ class Ledger {
   // events on-demand
   // TODO allow getting of events after a given length
   async events () {
+
+
+    /**
+     * docs = [givenDoc]
+     * util we find an 'Opened Document' event
+     *   look at the current documents first and latest events
+     *   if ( the first event said it was became another document )
+     *     docs.unshift(parentDoc)
+     *
+     */
+
+
     const { id, length } = this
     const entries = await this.doc.all()
     if (entries.length !== length) {
@@ -211,6 +226,7 @@ class Ledger {
     if (entries.length < 2) return []
     const events = []
     entries.shift() // remove header
+
     while (entries.length) {
       const buffer = entries.shift()
       let event
@@ -222,13 +238,25 @@ class Ledger {
       }
       events.push(event)
     }
+
+    let firstEvent = events[0]
+    // loop back docs to find first one?
+    while (firstEvent['@type'] === 'Became Document'){
+      console.log({ firstEvent })
+      if (firstEvent['@type'] === 'Became Document'){
+        const prevDoc = await this.doc.client.get(firstEvent.id)
+
+      }
+    }
     // let [header, ...events] = entries
     debug('GOT events', { id, length, events })
     return events
   }
 
+
   async update () {
     await this.doc.update()
+    // TODO move all this code into a `snapshot` or `projection` object
     // TODO cache what event number our state was last built at and return it
     // if our length has not grown,
     // TODO only apply new events to cached state
@@ -239,6 +267,9 @@ class Ledger {
       const event = events.shift()
       const eventSpec = this._getEventSpec(event['@event'])
       if (eventSpec.apply) {
+        // if a new event says we've moved
+        // get the new core, verify it says its became us
+        // add it to this.cores.push(newCore)
         state = eventSpec.apply(state, extractPayload(event))
       }
     }
@@ -270,8 +301,30 @@ class Ledger {
     await this.appendEvent('Closed Document', {})
   }
 
-  async moveDocument () {
-    await this.appendEvent('Moved Document', {})
+  async moveDocument ({ id }) {
+    if (!id) throw new Error(`id is required`)
+    const newDoc = await this.doc.client.get(id)
+    await newDoc.update()
+    console.log('moveDocument', newDoc)
+    await this.appendEvent('Moved Document', { id: newDoc.id })
+  }
+
+  async becomeDocument ({ id }) {
+    if (this.id === id) {
+      throw new Error(`cannot become self`)
+    }
+    const oldDoc = await this.doc.client.get(id)
+    await oldDoc.update()
+    console.log('BECOMING', { oldDoc })
+    const lastEvent = await oldDoc.get(oldDoc.length - 1)
+    // TODO dry up how to parse events
+    console.log('LATEST EVENT', JSON.parse(lastEvent))
+    const { '@eventId': latestEventId } = JSON.parse(lastEvent)
+    await this.appendEvent('Became Document', {
+      id,
+      latestEventId,
+    })
+
   }
 }
 
@@ -360,6 +413,36 @@ const BASE_EVENTS = compileEvents({
       state.documentMoved = {
         id: payload.id,
       }
+      // state.open = true
+      // state.signingKey = state['cryptographic signing key']
+      return state
+    }
+  },
+  'Became Document': {
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        latestEventId: { type: 'string' }
+      },
+      required: [
+        'id'
+      ],
+      additionalProperties: true
+    },
+    validate (state, payload) {
+      if (state.documentOpen) return 'cannot become another document, already opened'
+      if (state.documentClosed) return 'cannot become another document, already closed'
+      // todo validate payload.id
+    },
+    apply (state, payload) {
+      state = { ...state }
+      state.documentOpen = true
+      state.documentWas = payload.id
+      state.latestEventId = payload.latestEventId
+      // state.documentMoved = {
+      //   id: payload.id,
+      // }
       // state.open = true
       // state.signingKey = state['cryptographic signing key']
       return state
